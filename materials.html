@@ -83,6 +83,145 @@
   .bookctl button:hover{background:var(--ink);color:#fff}
   .bookctl .pgind{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--muted);min-width:5rem;text-align:center}
   .hint{margin-top:1.3rem;font-size:.72rem;letter-spacing:.06em;color:var(--muted);z-index:5}
+  @media(max-width:620px){
+    html.mobile-lite header{
+      padding:.72rem 1rem .64rem!important;
+      gap:.48rem;
+      align-items:flex-start;
+      border-bottom:1px solid rgba(23,24,27,.1);
+    }
+    html.mobile-lite header .logo{
+      font-size:.7rem;
+      letter-spacing:.24em;
+      padding:.34rem .55rem;
+      min-height:36px;
+    }
+    html.mobile-lite header nav{
+      width:100%;
+      max-width:100%;
+      gap:.82rem;
+      padding:.08rem 1.6rem .16rem 0;
+      font-size:.62rem;
+      letter-spacing:.12em;
+      line-height:1;
+      -webkit-overflow-scrolling:touch;
+      mask-image:linear-gradient(90deg,#000 calc(100% - 1.5rem),transparent);
+    }
+    html.mobile-lite header nav a{
+      min-height:36px;
+      display:inline-flex;
+      align-items:center;
+    }
+    html.mobile-lite header nav a[aria-current]{color:var(--ink)}
+    html.mobile-lite #sfxBtn{
+      top:.9rem!important;
+      right:1rem!important;
+      bottom:auto!important;
+      left:auto!important;
+      background:rgba(237,239,242,.96)!important;
+      z-index:1002!important;
+    }
+    html.mobile-lite .mat-wrap{
+      min-height:auto;
+      justify-content:flex-start;
+      padding:7.9rem 1rem 4.5rem;
+    }
+    html.mobile-lite .mat-intro{
+      margin-bottom:1.55rem;
+      text-align:left;
+    }
+    html.mobile-lite .mat-intro .eyebrow{
+      gap:.55rem;
+      font-size:.58rem;
+      letter-spacing:.22em;
+      justify-content:flex-start;
+    }
+    html.mobile-lite .mat-intro .eyebrow::before{display:none}
+    html.mobile-lite .mat-intro .eyebrow::after{width:2.6rem}
+    html.mobile-lite .mat-intro h1{
+      font-size:clamp(2.25rem,12vw,3rem);
+      line-height:1.03;
+    }
+    html.mobile-lite .mat-intro p{
+      font-size:.96rem;
+      line-height:1.58;
+    }
+    html.mobile-lite .book-row{
+      gap:1.9rem;
+      align-items:flex-start;
+    }
+    html.mobile-lite .book-col{
+      width:100%;
+      align-items:center;
+    }
+    html.mobile-lite .book-scene{
+      position:relative;
+      width:100%;
+      max-width:360px;
+      height:var(--mobile-book-height, 200px);
+      overflow:visible;
+      align-items:flex-start;
+      justify-content:flex-start;
+      margin-top:.25rem;
+      perspective:2200px;
+    }
+    html.mobile-lite .book{
+      position:absolute;
+      left:50%;
+      top:0;
+      transform:translateX(-50%) scale(var(--mobile-book-scale, .38))!important;
+      transform-origin:top center!important;
+    }
+    html.mobile-lite .board{
+      box-shadow:0 18px 42px rgba(23,24,27,.2);
+    }
+    html.mobile-lite .bookctl{
+      width:100%;
+      max-width:360px;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+      gap:.55rem;
+      margin-top:1rem;
+    }
+    html.mobile-lite .bookctl button{
+      width:auto!important;
+      min-width:0;
+      padding:.78rem .7rem!important;
+      white-space:nowrap;
+    }
+    html.mobile-lite .bookctl .pgind{
+      min-width:4.8rem;
+      max-width:5.6rem;
+      align-self:center;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:.68rem;
+    }
+    html.mobile-lite .hint{
+      max-width:20rem;
+      margin-top:.8rem;
+      text-align:center;
+      line-height:1.45;
+    }
+    html.mobile-lite .shelf-side{
+      width:100%;
+      max-width:360px;
+      align-items:stretch;
+      gap:.7rem;
+    }
+    html.mobile-lite .shelf{
+      width:100%;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:.8rem;
+    }
+    html.mobile-lite .minibook{
+      width:100%;
+      min-height:154px;
+      height:auto;
+      padding:.9rem .72rem;
+    }
+  }
   @media (hover:hover) and (pointer:fine){
     body{cursor:none}a,button,.leaf,[role=button],input,select,.book{cursor:none}
     #cur-dot{position:fixed;top:0;left:0;width:8px;height:8px;background:#17181b;z-index:1000;pointer-events:none;will-change:transform;transition:transform .08s linear,opacity .25s}
@@ -115,7 +254,7 @@
   <nav>
     <a href="index.html#services">Services</a>
     <a href="gallery.html">Gallery</a>
-    <a href="materials.html">Materials</a>
+    <a href="materials.html" aria-current="page">Materials</a>
     <a href="builder.html">Builder</a>
     <a href="portal.html">Portal</a>
     <a href="index.html#contact">Contact</a>
@@ -208,6 +347,20 @@
 
   var leavesEl=document.getElementById("leaves"), book=document.getElementById("book"), shelfEl=document.getElementById("shelf");
   var active=0, leaves=[], N=0, cur=0, PW=430, BOOKW=860;
+  function fitMobileBook(){
+    var scene=document.querySelector(".book-scene");
+    if(!scene || !book) return;
+    var mobile=document.documentElement.classList.contains("mobile-lite") || (window.matchMedia && matchMedia("(max-width:620px)").matches);
+    if(!mobile){
+      scene.style.removeProperty("--mobile-book-scale");
+      scene.style.removeProperty("--mobile-book-height");
+      return;
+    }
+    var available=Math.max(280, scene.clientWidth || Math.min(360, innerWidth-32));
+    var scale=Math.min(.42, Math.max(.32, (available-10)/884));
+    scene.style.setProperty("--mobile-book-scale", scale.toFixed(3));
+    scene.style.setProperty("--mobile-book-height", Math.ceil(520*scale)+"px");
+  }
 
   /* paper-turn sound */
   function snd(u,vol){
@@ -239,7 +392,7 @@
       var h1=faceHTML(f1,(f1.type==="mat")?(++matNo):0).replace('class="face','class="face back');
       leaf.innerHTML=h0+h1; leavesEl.appendChild(leaf); leaves.push(leaf);
     }
-    cur=0; refresh();
+    cur=0; refresh(); fitMobileBook();
   }
   function setLeaf(i,t){ leaves[i].style.transform = t?"rotateY(-180deg)":"rotateY(0deg)"; }
   function updateZ(){ for(var i=0;i<N;i++) leaves[i].style.zIndex=(i<cur)?i:(N-i); }
@@ -293,6 +446,7 @@
   }
 
   buildBook(); renderShelf();
+  addEventListener("resize",fitMobileBook,{passive:true});
 })();
 </script>
 
