@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="mobile-lite.js?v=20260704m4"></script>
 <title>Elevé — Project Gallery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -105,6 +106,24 @@
   .cdot{width:20px;height:2px;background:rgba(23,24,27,.2);border:none;cursor:pointer;transition:.3s;padding:0}
   .cdot.on{width:32px;background:var(--ink)}
   @media(max-width:600px){.slide{width:300px;height:200px;margin:-100px 0 0 -150px}.carousel{height:400px;overflow:hidden}.ring{overflow:hidden}}
+  @media(max-width:760px){
+    html.mobile-lite .cover{height:auto;min-height:100svh}
+    html.mobile-lite .cover-sticky{position:relative;min-height:100svh;height:auto;display:flex;align-items:center}
+    html.mobile-lite #seq,
+    html.mobile-lite #coverLoad{display:none!important}
+    html.mobile-lite .cover-title{position:relative;top:auto;padding:5.4rem 1rem 3rem;text-align:left}
+    html.mobile-lite .cover-title h1{font-size:clamp(2.6rem,16vw,4.2rem);line-height:1}
+    html.mobile-lite .cover-title .lead{margin-left:0;margin-right:0;font-size:1rem;line-height:1.58}
+    html.mobile-lite .cover-cue{display:none}
+    html.mobile-lite .project{padding:3.4rem 0}
+    html.mobile-lite .carousel.lite-carousel{height:auto;overflow:visible;padding-bottom:.75rem}
+    html.mobile-lite .lite-carousel .ring{position:relative;inset:auto;display:flex;gap:.85rem;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-inline:contain;padding:.25rem 1.5rem 1rem;margin:0 -1.5rem;scrollbar-width:none}
+    html.mobile-lite .lite-carousel .ring::-webkit-scrollbar{display:none}
+    html.mobile-lite .lite-carousel .slide{position:relative;top:auto;left:auto;flex:0 0 min(82vw,310px);width:min(82vw,310px);height:198px;margin:0;transform:none!important;opacity:1!important;filter:none!important;scroll-snap-align:center;box-shadow:0 16px 36px rgba(23,24,27,.16)}
+    html.mobile-lite .lite-carousel .slide .exp{display:none}
+    html.mobile-lite .lite-carousel .cdots{display:none}
+    html.mobile-lite .lite-carousel .cnav{position:static;transform:none;justify-content:center;margin-top:.65rem}
+  }
 
   /* lightbox */
   #lb{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:5vw;background:rgba(23,24,27,.5);backdrop-filter:blur(16px);opacity:0;transition:opacity .35s ease}
@@ -138,8 +157,8 @@
 @keyframes cspin{to{transform:rotate(360deg)}}
 </style>
 <script src="cms.js?v=2"></script>
-<script src="motion.js" defer></script>
-<link rel="stylesheet" href="elevate.css?v=20260704">
+<script src="motion.js?v=20260704m4" defer></script>
+<link rel="stylesheet" href="elevate.css?v=20260704m4">
 <meta name="description" content="Selected Elevé projects presented as an interactive 3D coverflow gallery.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Gallery — Elevé">
@@ -202,7 +221,15 @@
 <script>
 (function(){
   "use strict";
-  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var lite=!!window.__mobileLite;
+  var reduce=lite || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(lite){
+    var enterLite=document.getElementById("enterBtn");
+    if(enterLite) enterLite.addEventListener("click",function(){
+      var target=document.getElementById("projects");
+      if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  }
   function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function lastWordEm(s){ s=String(s==null?"":s); var m=s.match(/^(.*\s)(\S+)$/); return m?esc(m[1])+"<em>"+esc(m[2])+"</em>":esc(s); }
   function safeImageUrl(u){
@@ -306,6 +333,12 @@
       (function(idx){dt.addEventListener("click",function(){goTo(idx);});})(i);
       dots.appendChild(dt);
     }
+    if(lite){
+      el.classList.add("lite-carousel");
+      el.querySelector(".next").addEventListener("click",function(){ ring.scrollBy({left:Math.min(320,ring.clientWidth*.78),behavior:"smooth"}); });
+      el.querySelector(".prev").addEventListener("click",function(){ ring.scrollBy({left:-Math.min(320,ring.clientWidth*.78),behavior:"smooth"}); });
+      return;
+    }
     var index=0, timer=null, chosen=false;
 
     function relOf(i){ var r=(i-index+n)%n; if(r>n/2) r-=n; return r; }
@@ -377,6 +410,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 <script>
 (function(){
   var cv=document.getElementById("gridfx"); if(!cv) return;
+  if(window.__mobileLite){ cv.remove(); return; }
   var cx=cv.getContext("2d"), dpr=Math.min(2,window.devicePixelRatio||1), CELL=38, cw=0, ch=0;
   var fine=!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
   var tx=-9999,ty=-9999,mx=-9999,my=-9999, cells={}, ripples=[];
@@ -437,6 +471,11 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 <script>
 (function(){
   var cv=document.getElementById("seq"); if(!cv) return;
+  if(window.__mobileLite){
+    var cl=document.getElementById("coverLoad"); if(cl) cl.remove();
+    cv.remove();
+    return;
+  }
   var ctx=cv.getContext("2d"), N=74, frames=[], loaded=0;
   function nm(i){ var s=""+i; while(s.length<5) s="0"+s; return "cover/cover_"+s+".jpg"; }
   for(var i=0;i<N;i++){ var im=new Image(); im.src=nm(i); im.onload=function(){ loaded++; if(loaded===1){ resize(); var cl=document.getElementById("coverLoad"); if(cl){ cl.style.opacity="0"; setTimeout(function(){cl.remove();},500);} } }; frames.push(im); }
@@ -463,7 +502,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 </script>
 <script>
 (function(){
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if(window.__mobileLite || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   var cur=window.scrollY||0, target=cur, running=false, ease=0.06, autoTween=null;
   var locked=true, _root=document.documentElement; _root.style.overflow="hidden"; window.scrollTo(0,0);
   (function(){ var eb=document.getElementById("enterBtn"); if(!eb) return;
@@ -508,6 +547,6 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 </script>
 <script src="sfx.js?v=6"></script>
 <script src="site.js"></script>
-<script src="chrome.js?v=20260704"></script>
+<script src="chrome.js?v=20260704m4"></script>
 </body>
 </html>

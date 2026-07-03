@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="mobile-lite.js?v=20260704m4"></script>
 <title>Elevé · Materials Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,8 +93,8 @@
   @media(prefers-reduced-motion:reduce){#pfade{display:none}.leaf{transition:none}}
 </style>
 <script src="page-turn.js"></script>
-<script src="motion.js" defer></script>
-<link rel="stylesheet" href="elevate.css?v=20260704">
+<script src="motion.js?v=20260704m4" defer></script>
+<link rel="stylesheet" href="elevate.css?v=20260704m4">
 <script src="materials-data.js"></script>
 <script src="cms.js?v=2"></script>
 <meta name="description" content="The Elevé materials library — woods, stone, metals, textiles and glass, in an interactive book you can flip through.">
@@ -299,6 +300,7 @@
 <script>
 (function(){
   var cv=document.getElementById("gridfx"); if(!cv) return;
+  if(window.__mobileLite){ cv.remove(); return; }
   var cx=cv.getContext("2d"), dpr=Math.min(2,window.devicePixelRatio||1), CELL=38, cw=0, ch=0;
   var fine=!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
   var tx=-9999,ty=-9999,mx=-9999,my=-9999, cells={}, ripples=[];
@@ -365,6 +367,6 @@ addEventListener("scroll",function(){if(!running){cur=target=scrollY;}},{passive
 <div class="ui-corner ui-bl">ELEVÉ — Materials</div>
 <div class="ui-corner ui-br">· library</div>
 <script src="site.js"></script>
-<script src="chrome.js?v=20260704"></script>
+<script src="chrome.js?v=20260704m4"></script>
 </body>
 </html>

@@ -3,7 +3,8 @@
    marquee loop, parallax, local time. Dependency-free, reduced-motion aware. */
 (function(){
   "use strict";
-  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var lite = !!window.__mobileLite;
+  var reduce = lite || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var fine = window.matchMedia && matchMedia("(hover:hover) and (pointer:fine)").matches;
 
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded",fn); }
@@ -11,13 +12,13 @@
   ready(function(){
 
     /* ---- film grain layer (idempotent) ---- */
-    if(!document.querySelector(".e-grain") && !document.body.hasAttribute("data-no-grain")){
+    if(!lite && !document.querySelector(".e-grain") && !document.body.hasAttribute("data-no-grain")){
       var g=document.createElement("div"); g.className="e-grain"; g.setAttribute("aria-hidden","true");
       document.body.appendChild(g);
     }
 
     /* ---- split headlines into animated word masks ---- */
-    document.querySelectorAll("[data-split]").forEach(function(el){
+    if(!lite) document.querySelectorAll("[data-split]").forEach(function(el){
       if(el.__split) return; el.__split=true;
       var base=parseFloat(el.getAttribute("data-split-delay")||"0");
       var step=parseFloat(el.getAttribute("data-split-step")||"0.075");
@@ -51,7 +52,10 @@
 
     /* ---- reveal observer ---- */
     var toWatch=document.querySelectorAll("[data-split],[data-reveal],.e-rule[data-draw]");
-    if("IntersectionObserver" in window && toWatch.length){
+    if(lite){
+      document.documentElement.classList.add("e-settled");
+      toWatch.forEach(function(el){ el.classList.add("is-in"); });
+    } else if("IntersectionObserver" in window && toWatch.length){
       var io=new IntersectionObserver(function(es){
         es.forEach(function(e){
           if(e.isIntersecting){ e.target.classList.add("is-in"); io.unobserve(e.target); }
@@ -64,17 +68,19 @@
        1) Anything already in the viewport gets .is-in shortly after load
           (covers throttled tabs where IO/transitions stall).
        2) A hard override class then snaps any still-pending reveal visible. ---- */
-    setTimeout(function(){
-      toWatch.forEach(function(el){
-        if(el.classList.contains("is-in")) return;
-        var r=el.getBoundingClientRect();
-        if(r.top<innerHeight && r.bottom>0) el.classList.add("is-in");
-      });
-    },1400);
-    setTimeout(function(){
-      document.documentElement.classList.add("e-settled");
-      toWatch.forEach(function(el){ el.classList.add("is-in"); });
-    },3800);
+    if(!lite){
+      setTimeout(function(){
+        toWatch.forEach(function(el){
+          if(el.classList.contains("is-in")) return;
+          var r=el.getBoundingClientRect();
+          if(r.top<innerHeight && r.bottom>0) el.classList.add("is-in");
+        });
+      },1400);
+      setTimeout(function(){
+        document.documentElement.classList.add("e-settled");
+        toWatch.forEach(function(el){ el.classList.add("is-in"); });
+      },3800);
+    }
 
     /* ---- count-up numbers ---- */
     var nums=document.querySelectorAll("[data-countup]");
@@ -95,7 +101,7 @@
     }
 
     /* ---- marquee: duplicate track once for a seamless loop ---- */
-    document.querySelectorAll(".e-marquee-track").forEach(function(t){
+    if(!lite) document.querySelectorAll(".e-marquee-track").forEach(function(t){
       if(t.__dup) return; t.__dup=true;
       t.innerHTML=t.innerHTML+t.innerHTML;
     });

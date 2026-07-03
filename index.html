@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="mobile-lite.js?v=20260704m4"></script>
 <title>Elevé — Where Space Becomes Emotion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,11 +17,8 @@
   }
 }
 </script>
-<script src="chair.glb.js"></script>
-<script src="models.glb.js"></script>
 <script src="cms.js?v=2"></script>
-<script src="cubes-sfx.js"></script>
-<script src="motion.js" defer></script>
+<script src="motion.js?v=20260704m4" defer></script>
 <style>
   :root{
     --violet:#a7abb3; --periwinkle:#bcc0c7; --blush:#cfd2d7; --sky:#c3c7ce;
@@ -286,8 +284,23 @@
   .cube-loading .sk{width:42px;height:42px;border:2px solid rgba(23,24,27,.15);border-top-color:var(--ink);border-radius:50%;animation:cspin 1s linear infinite}
   .cube-loading .lbl{font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
   @keyframes cspin{to{transform:rotate(360deg)}}
+  @media(max-width:760px){
+    html.mobile-lite .hero{min-height:auto;align-items:flex-start;justify-content:flex-start;padding:5.6rem 1rem 3.2rem;overflow:visible}
+    html.mobile-lite .hero-inner{display:block;min-height:auto}
+    html.mobile-lite .hero #heroText{max-width:none}
+    html.mobile-lite .hero-card{padding:1.25rem;background:#eef0f3;border:1px solid rgba(23,24,27,.16);box-shadow:none}
+    html.mobile-lite .hero h1{font-size:clamp(2.25rem,13vw,3.35rem);line-height:1.02;margin:.45rem 0 .35rem}
+    html.mobile-lite .hero p.lead{font-size:1rem;line-height:1.58;margin:.75rem 0 1.35rem}
+    html.mobile-lite .hero .anim[style*="display:flex"]{gap:.65rem!important}
+    html.mobile-lite .hero-meta{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:1.35rem}
+    html.mobile-lite .hero-meta span{border-top:1px solid rgba(23,24,27,.14);padding-top:.65rem}
+    html.mobile-lite .hero-visual{display:none!important}
+    html.mobile-lite .e-marquee{display:none}
+    html.mobile-lite section.container{padding-top:4rem!important;padding-bottom:4rem!important}
+    html.mobile-lite .card,.quote{box-shadow:none}
+  }
 </style>
-<link rel="stylesheet" href="elevate.css?v=20260704">
+<link rel="stylesheet" href="elevate.css?v=20260704m4">
 <meta name="description" content="An elegant, minimalist design studio shaping residential and commercial spaces. Explore projects, a materials library and a live room builder.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Elevé — Interior, Architecture & Exterior Design Studio">
@@ -562,7 +575,8 @@
 <script>
 (function(){
   "use strict";
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var lite = !!window.__mobileLite;
+  var reduce = lite || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var content = document.getElementById("scroll-content");
   var hdr = document.getElementById("hdr");
   var heroText = document.getElementById("heroText");
@@ -700,6 +714,7 @@
   });
 
   /* particle network */
+  if(lite){ var pc=document.getElementById("particles"); if(pc) pc.remove(); return; }
   var canvas=document.getElementById("particles"), pctx=canvas.getContext("2d");
   var w,h,particles,raf, pmouse={x:-9999,y:-9999};
   var pcolors=["120,124,132","150,154,162","178,182,189"];
@@ -735,17 +750,47 @@
 
 <!-- WebGL glass cubes (Three.js + cannon-es physics) -->
 <script type="module">
-import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
-import * as CANNON from "cannon-es";
-
+let THREE, RoomEnvironment, RoundedBoxGeometry, GLTFLoader, EffectComposer, RenderPass, SSAOPass, CANNON;
 const wrap = document.getElementById("cubeWrap");
-if (wrap) start();
+if (wrap && window.__mobileLite) {
+  wrap.classList.add("cube-mobile-lite");
+  const load = document.getElementById("cubeLoad");
+  if (load) load.remove();
+} else if (wrap) start();
+
+function loadSceneModules(){
+  if (THREE) return Promise.resolve();
+  return Promise.all([
+    import("three"),
+    import("three/addons/environments/RoomEnvironment.js"),
+    import("three/addons/geometries/RoundedBoxGeometry.js"),
+    import("three/addons/loaders/GLTFLoader.js"),
+    import("three/addons/postprocessing/EffectComposer.js"),
+    import("three/addons/postprocessing/RenderPass.js"),
+    import("three/addons/postprocessing/SSAOPass.js"),
+    import("cannon-es")
+  ]).then(([three, env, geom, loader, composer, render, ssao, cannon]) => {
+    THREE = three;
+    RoomEnvironment = env.RoomEnvironment;
+    RoundedBoxGeometry = geom.RoundedBoxGeometry;
+    GLTFLoader = loader.GLTFLoader;
+    EffectComposer = composer.EffectComposer;
+    RenderPass = render.RenderPass;
+    SSAOPass = ssao.SSAOPass;
+    CANNON = cannon;
+  });
+}
+function loadClassicScript(src, exists){
+  if (exists && exists()) return Promise.resolve();
+  return new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = resolve;
+    document.head.appendChild(s);
+  });
+}
 
 function start(){
   if (wrap.clientWidth < 10){
@@ -754,7 +799,21 @@ function start(){
   } else { boot(); }
 }
 
-function boot(){
+async function boot(){
+  try {
+    await Promise.all([
+      loadSceneModules(),
+      loadClassicScript("chair.glb.js?v=20260704m4", () => !!window.__CHAIR_GLB),
+      loadClassicScript("models.glb.js?v=20260704m4", () => !!window.__MODELS),
+      loadClassicScript("cubes-sfx.js?v=20260704m4", () => !!window.__CUBE_SFX)
+    ]);
+  }
+  catch (err) {
+    wrap.classList.add("cube-mobile-lite");
+    const load = document.getElementById("cubeLoad");
+    if (load) load.remove();
+    return;
+  }
   let W = wrap.clientWidth, H = wrap.clientHeight;
 
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
@@ -1014,6 +1073,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 <script>
 (function(){
   var cv=document.getElementById("gridfx"); if(!cv) return;
+  if(window.__mobileLite){ cv.remove(); return; }
   var cx=cv.getContext("2d"), dpr=Math.min(2,window.devicePixelRatio||1), CELL=38, cw=0, ch=0;
   var fine=!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
   var tx=-9999,ty=-9999,mx=-9999,my=-9999, cells={}, ripples=[];
@@ -1070,7 +1130,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 
 <script src="sfx.js?v=6"></script>
 <script src="site.js"></script>
-<script src="chrome.js?v=20260704"></script>
+<script src="chrome.js?v=20260704m4"></script>
 <script>
 (function(){
   var ids=["hero","services","portfolio","featured","founder","testimonials","contact"];

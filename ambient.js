@@ -3,7 +3,8 @@
    page-fade transitions. Pages with their own inline versions are untouched. */
 (function(){
   "use strict";
-  var reduce=window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var lite=!!window.__mobileLite;
+  var reduce=lite || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   function ready(fn){ if(document.readyState!=="loading") fn(); else document.addEventListener("DOMContentLoaded",fn); }
 
@@ -32,7 +33,7 @@
     }
 
     /* ---------- interactive grid ---------- */
-    if(!document.getElementById("gridfx")){
+    if(!lite && !document.getElementById("gridfx")){
       var cv=document.createElement("canvas"); cv.id="gridfx";
       cv.style.cssText="position:fixed;inset:0;z-index:0;width:100%;height:100%;pointer-events:none";
       document.body.insertBefore(cv,document.body.firstChild);

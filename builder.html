@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="mobile-lite.js?v=20260704m4"></script>
 <title>Elevé — CAD Room Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -119,9 +120,9 @@
   body.v3d-on #cur-ring{opacity:0!important}
   body.v3d-on #cur-dot{z-index:1500;width:6px;height:6px;opacity:.55}
 </style>
-<link rel="stylesheet" href="elevate.css?v=20260704">
+<link rel="stylesheet" href="elevate.css?v=20260704m4">
 <script src="dialog.js"></script>
-<script src="motion.js" defer></script>
+<script src="motion.js?v=20260704m4" defer></script>
 <meta name="description" content="A browser-based CAD room builder: draw floor plans, furnish rooms, view them in 3D, estimate cost and export DXF, OBJ and PDF.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Room Builder — Elevé">
@@ -1081,6 +1082,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 <script>
 (function(){
   var cv=document.getElementById("gridfx"); if(!cv) return;
+  if(window.__mobileLite){ cv.remove(); return; }
   var cx=cv.getContext("2d"), dpr=Math.min(2,window.devicePixelRatio||1), CELL=38, cw=0, ch=0;
   var fine=!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
   var tx=-9999,ty=-9999,mx=-9999,my=-9999, cells={}, ripples=[];
@@ -1140,7 +1142,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 </script>
 <script>
 (function(){
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if(window.__mobileLite || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   var cur=window.scrollY||0, target=cur, running=false, ease=0.06;
   function maxY(){return Math.max(0,(document.documentElement.scrollHeight||document.body.scrollHeight)-window.innerHeight);}
   function step(){ cur+=(target-cur)*ease; if(Math.abs(target-cur)<0.25){cur=target;window.scrollTo(0,cur);running=false;return;} window.scrollTo(0,cur); requestAnimationFrame(step); }
@@ -1196,13 +1198,18 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 </script>
 <div id="view3d"><canvas id="cv3d"></canvas><button class="close3d" id="close3d">✕ Close 3D</button><button class="close3d" id="marker3d" style="right:auto;left:18px">✎ Marker</button><button class="close3d" id="undo3d" style="right:auto;left:150px">↶</button><button class="close3d" id="redo3d" style="right:auto;left:198px">↷</button><button class="close3d" id="clearmk3d" style="right:auto;left:246px">Clear marks</button><div id="lvl3d"><button id="lvlDown" aria-label="Lower level">▼</button><span class="lbl" id="lvlLbl">—</span><button id="lvlUp" aria-label="Higher level">▲</button></div><div class="hint3d">drag orbit · shift-drag pan · right-drag light · scroll zoom · ▲▼ change level</div></div>
 <script type="module">
-import * as THREE from "three";
+let THREE = null, loading3d = null;
 (function(){
   var wrap=document.getElementById("view3d"), cv=document.getElementById("cv3d");
   if(!wrap||!cv) return;
   var renderer,scene,camera,group,raf,az=0.9,el=0.62,rad=1500,target,dl,sunAz=0.9,sunEl=0.95,sunR=3000,lvl=0;
   var ray,ndc,marks,markGeo,markMat,markerOn=false,painting=false,curStroke=null,strokes=[],redoStrokes=[],lastPt=null;
   var dragging=false,px=0,py=0;
+  function ensure3D(){
+    if(THREE) return Promise.resolve();
+    if(!loading3d) loading3d=import("three").then(function(m){ THREE=m; });
+    return loading3d;
+  }
   function init(){
     renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -1411,7 +1418,9 @@ import * as THREE from "three";
   if(_lu)_lu.addEventListener("click",function(){ setLvl(lvl+1); });
   if(_ld)_ld.addEventListener("click",function(){ setLvl(lvl-1); });
 
-  window.__open3D=function(){
+  window.__open3D=async function(){
+    try{ await ensure3D(); }
+    catch(e){ eleveUI.alert("The 3D view needs an internet connection to load the renderer.",{title:"3D view"}); return; }
     var d=window.__FLOOR3D||{};
     lvl=(typeof d.af==="number")?d.af:lvlCount()-1;
     if(!renderer)init();
@@ -1426,7 +1435,7 @@ import * as THREE from "three";
 })();
 </script>
 <script src="site.js"></script>
-<script src="chrome.js?v=20260704"></script>
+<script src="chrome.js?v=20260704m4"></script>
 <script src="builder-cloud.js"></script>
 </body>
 </html>
