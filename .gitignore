@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!server/.env.example
+
+# Runtime data
+server/db.json
+server/*.log
+server/events.log
+server/backups/
+server/portals/
+server/*.tmp
+
+# Build and test output
+coverage/
+dist/
+build/
+.cache/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/

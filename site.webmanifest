@@ -1,0 +1,10 @@
+{
+  "name": "Elevé — Interior · Architecture · Exterior",
+  "short_name": "Elevé",
+  "description": "An elegant, minimalist design studio — plus a CAD room builder and materials library.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#edeff2",
+  "theme_color": "#17181b",
+  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }]
+}

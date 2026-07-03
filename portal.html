@@ -1,0 +1,765 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Portal — Elevé</title>
+<meta name="description" content="The Elevé client portal — moodboards, renders, approvals, materials, budget and schedule for your project, in one place.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#17181b">
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<script src="dialog.js"></script>
+<script src="motion.js" defer></script>
+<script src="ambient.js" defer></script>
+<style>
+ *{box-sizing:border-box;border-radius:0!important}
+ body{margin:0;background:#edeff2;color:#17181b;font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+ .mono{font-family:"JetBrains Mono",monospace}
+ .serif{font-family:"Playfair Display",serif}
+
+ /* ---- header ---- */
+ header.p-hdr{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.95rem 1.4rem;
+   background:rgba(237,239,242,.85);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid #17181b}
+ .p-hdr .logo{font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;letter-spacing:.3em;color:#17181b;text-decoration:none;border:1px solid #17181b;padding:.42rem .65rem;line-height:1}
+ .p-hdr .sect{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:#8b8f97}
+ .p-hdr .right{margin-left:auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+ .p-hdr .who{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.1em;color:#3c3e44}
+ .p-btn{font-family:"JetBrains Mono",monospace;font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+   padding:.55rem .85rem;border:1px solid #17181b;background:transparent;color:#17181b;cursor:pointer;transition:.2s;text-decoration:none;display:inline-flex;align-items:center;gap:.45rem}
+ .p-btn:hover{background:#17181b;color:#fff}
+ .p-btn.solid{background:#17181b;color:#fff}
+ .p-btn.solid:hover{background:#000;box-shadow:0 8px 18px rgba(23,24,27,.22)}
+ .p-btn.on{background:#17181b;color:#fff}
+ .p-btn:disabled{opacity:.35;cursor:default}
+
+ /* ---- gate ---- */
+ #gate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:1.2rem;
+   background:linear-gradient(135deg,#edeff2,#f4f5f7 45%,#e8eaee)}
+ #gate[hidden],#app[hidden],#offline[hidden]{display:none!important}
+ .gate-card{position:relative;width:min(400px,94vw);background:#f6f7f9;border:1px solid #17181b;box-shadow:12px 12px 0 rgba(23,24,27,.12);padding:2.1rem 1.9rem}
+ .gate-card::before,.gate-card::after{content:"";position:absolute;width:13px;height:13px;border:0 solid rgba(23,24,27,.6)}
+ .gate-card::before{left:8px;top:8px;border-left-width:1px;border-top-width:1px}
+ .gate-card::after{right:8px;bottom:8px;border-right-width:1px;border-bottom-width:1px}
+ .gate-card .kick{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:#8b8f97;margin:0 0 .7rem}
+ .gate-card h1{font-family:"Playfair Display",serif;font-size:1.9rem;font-weight:600;line-height:1.15;margin:0 0 .4rem}
+ .gate-card h1 em{font-style:italic;font-weight:500}
+ .gate-card .sub{font-size:.85rem;color:#6b6f76;line-height:1.6;margin:0 0 1.4rem}
+ .gate-card label{display:block;font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:#8b8f97;margin:0 0 .25rem}
+ .gate-card input{width:100%;font:inherit;font-size:.96rem;color:#17181b;background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.3);padding:.55rem 0;outline:none;margin-bottom:1.2rem}
+ .gate-card input:focus{border-bottom-color:#17181b}
+ .gate-card .p-btn{width:100%;justify-content:center;padding:.85rem}
+ .gate-note{margin-top:1.1rem;font-size:.75rem;color:#8b8f97;line-height:1.6}
+ .gate-err{color:#8a2b2b;font-size:.8rem;min-height:1.2em;margin:.6rem 0 0}
+
+ /* ---- shell ---- */
+ .shell{display:grid;grid-template-columns:15.5rem 1fr;max-width:96rem;margin:0 auto;min-height:calc(100vh - 60px)}
+ @media(max-width:900px){.shell{grid-template-columns:1fr}}
+ aside.nav{position:sticky;top:60px;align-self:start;border-right:1px solid rgba(23,24,27,.6);min-height:calc(100vh - 60px);padding:1.6rem 0;background:transparent;z-index:5}
+ @media(max-width:900px){aside.nav{position:static;min-height:0;border-right:none;border-bottom:1px solid #17181b;display:flex;flex-wrap:wrap;padding:.5rem}}
+ .nav .lbl{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;color:#8b8f97;padding:0 1.5rem 1rem}
+ @media(max-width:900px){.nav .lbl{display:none}}
+ .nav button{display:flex;align-items:baseline;gap:.7rem;width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;
+   font:inherit;font-size:.88rem;color:#17181b;padding:.62rem 1.5rem;cursor:pointer;transition:.18s}
+ .nav button::before{content:attr(data-no);font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.08em;color:#8b8f97}
+ .nav button:hover{background:rgba(23,24,27,.05)}
+ .nav button.on{border-left-color:#17181b;background:rgba(23,24,27,.06);font-weight:600}
+ .nav button.on::before{color:#17181b}
+ .nav button .badge{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:.56rem;border:1px solid rgba(23,24,27,.4);padding:.12rem .38rem;color:#3c3e44}
+ @media(max-width:900px){.nav button{width:auto;border-left:none;padding:.5rem .8rem}.nav button.on{border-bottom:2px solid #17181b}}
+ .nav .phase-mini{margin:1.6rem 1.5rem 0;padding-top:1.2rem;border-top:1px solid rgba(23,24,27,.14)}
+ @media(max-width:900px){.nav .phase-mini{display:none}}
+ .nav .phase-mini .t{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:#8b8f97;margin-bottom:.5rem}
+ .nav .phase-mini .v{font-family:"Playfair Display",serif;font-style:italic;font-size:1.05rem}
+
+ main.panel-host{padding:2.2rem 2.4rem 6rem;position:relative;z-index:5;min-width:0}
+ @media(max-width:640px){main.panel-host{padding:1.4rem 1.1rem 4rem}}
+ .panel{display:none}.panel.on{display:block;animation:pin .45s cubic-bezier(.22,1,.36,1)}
+ @keyframes pin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+ @media(prefers-reduced-motion:reduce){.panel.on{animation:none}}
+
+ .ph{margin-bottom:2rem}
+ .ph .kick{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:#8b8f97;margin:0 0 .5rem}
+ .ph h2{font-family:"Playfair Display",serif;font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:600;line-height:1.15;margin:0}
+ .ph h2 em{font-style:italic;font-weight:500}
+ .ph .sub{color:#6b6f76;font-size:.9rem;margin:.5rem 0 0;max-width:44rem;line-height:1.65}
+
+ .card{background:#f6f7f9;border:1px solid rgba(23,24,27,.3);padding:1.4rem;position:relative}
+ .card.tick::before,.card.tick::after{content:"";position:absolute;width:12px;height:12px;border:0 solid rgba(23,24,27,.5);pointer-events:none}
+ .card.tick::before{left:7px;top:7px;border-left-width:1px;border-top-width:1px}
+ .card.tick::after{right:7px;bottom:7px;border-right-width:1px;border-bottom-width:1px}
+
+ /* dashboard */
+ .proj-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1.2rem;flex-wrap:wrap;margin-bottom:1.6rem}
+ .proj-head h2{font-family:"Playfair Display",serif;font-size:clamp(2rem,4.4vw,3rem);font-weight:600;margin:0;line-height:1.05}
+ .proj-head h2 em{font-style:italic;font-weight:500}
+ .proj-head .meta{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:#8b8f97;display:flex;gap:1.4rem;flex-wrap:wrap}
+ .proj-head .meta b{color:#17181b;font-weight:500}
+ .stepper{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:1.8rem 0 .4rem;position:relative}
+ .step{position:relative;padding-top:1.35rem}
+ .step::before{content:"";position:absolute;top:.42rem;left:0;right:0;height:1px;background:rgba(23,24,27,.22)}
+ .step:first-child::before{left:50%}.step:last-child::before{right:50%}
+ .step .dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:13px;height:13px;border:1px solid #17181b;background:#edeff2;z-index:2}
+ .step.done .dot{background:#17181b}
+ .step.now .dot{background:#edeff2;box-shadow:0 0 0 4px rgba(23,24,27,.12)}
+ .step.done::before{background:#17181b}
+ .step .nm{display:block;text-align:center;font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:#8b8f97;padding:0 .2rem}
+ .step.now .nm{color:#17181b;font-weight:500}
+ .step.done .nm{color:#3c3e44}
+ .grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:1.2rem;margin-top:1.6rem}
+ @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+ .card h3{font-family:"JetBrains Mono",monospace;font-size:.62rem;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:#8b8f97;margin:0 0 1rem;display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+ .act{display:flex;align-items:center;gap:.85rem;padding:.7rem 0;border-top:1px dotted rgba(23,24,27,.2);cursor:pointer}
+ .act:first-of-type{border-top:none}
+ .act .box{width:15px;height:15px;border:1px solid #17181b;flex:none;display:grid;place-items:center;font-size:10px;line-height:1;background:transparent;color:#fff;transition:.2s}
+ .act.done .box{background:#17181b}
+ .act .tx{font-size:.9rem;color:#17181b;flex:1}
+ .act.done .tx{color:#8b8f97;text-decoration:line-through}
+ .act .go{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.12em;color:#3c3e44;text-transform:uppercase}
+ .act:hover .go{color:#17181b;text-decoration:underline}
+ .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(23,24,27,.25);border:1px solid rgba(23,24,27,.25)}
+ .stat{background:#f6f7f9;padding:1rem}
+ .stat b{display:block;font-family:"Playfair Display",serif;font-size:1.7rem;font-weight:600;line-height:1.1}
+ .stat span{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:#8b8f97}
+
+ /* pills */
+ .pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.4rem}
+ .pill{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .85rem;
+   border:1px solid rgba(23,24,27,.3);background:transparent;color:#3c3e44;cursor:pointer;transition:.2s}
+ .pill:hover{border-color:#17181b;color:#17181b}
+ .pill.on{background:#17181b;color:#fff;border-color:#17181b}
+
+ /* moodboards */
+ .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1.1rem}
+ .mb{background:#f6f7f9;border:1px solid rgba(23,24,27,.28);transition:border-color .25s,box-shadow .25s;display:flex;flex-direction:column}
+ .mb:hover{border-color:#17181b;box-shadow:0 14px 34px rgba(23,24,27,.1)}
+ .mb .sw{aspect-ratio:4/3;position:relative}
+ .mb .sw .st{position:absolute;top:.6rem;right:.6rem;font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;padding:.2rem .45rem;background:rgba(246,247,249,.92);border:1px solid #17181b}
+ .mb .bd{padding:.9rem .95rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+ .mb .nm{font-family:"Playfair Display",serif;font-size:1.06rem;font-weight:600;line-height:1.2}
+ .mb .ct{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:#8b8f97}
+ .mb .ai{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.06em;color:#3c3e44;border:1px dashed rgba(23,24,27,.4);padding:.3rem .45rem;line-height:1.5}
+ .mb .ai::before{content:"✦ AI · ";color:#17181b}
+ .mb .row{display:flex;gap:.4rem;margin-top:auto;padding-top:.6rem}
+ .mb .row .p-btn{padding:.42rem .55rem;font-size:.62rem;flex:1;justify-content:center}
+
+ /* renders */
+ .ba{position:relative;aspect-ratio:16/9;border:1px solid #17181b;overflow:hidden;user-select:none;touch-action:none;cursor:ew-resize}
+ .ba .before,.ba .after{position:absolute;inset:0}
+ .ba .after{clip-path:inset(0 0 0 var(--x,50%))}
+ .ba .bar{position:absolute;top:0;bottom:0;left:var(--x,50%);width:1px;background:#17181b;z-index:3}
+ .ba .bar::after{content:"◂ ▸";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.6rem;letter-spacing:.1em;
+   background:#17181b;color:#fff;padding:.35rem .5rem;white-space:nowrap;font-family:"JetBrains Mono",monospace}
+ .ba .tag{position:absolute;bottom:.6rem;font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;
+   padding:.25rem .5rem;background:rgba(246,247,249,.92);border:1px solid #17181b;z-index:2}
+ .ba .tag.b{left:.6rem}.ba .tag.a{right:.6rem}
+ .rmeta{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-top:1rem}
+ .rnote{font-size:.85rem;color:#6b6f76}
+ .appr-chip{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;padding:.45rem .7rem;background:#17181b;color:#fff}
+
+ /* approvals */
+ .aprow{display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;padding:1.05rem 0;border-top:1px solid rgba(23,24,27,.16)}
+ .aprow:first-of-type{border-top:1px solid transparent}
+ .aprow .t{flex:1;min-width:14rem}
+ .aprow .t b{font-family:"Playfair Display",serif;font-size:1.1rem;font-weight:600;display:block}
+ .aprow .t span{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:#8b8f97}
+.aprow .note{width:100%;font-size:.82rem;color:#6b6f76;border:1px solid rgba(23,24,27,.22);background:rgba(246,247,249,.62);padding:.65rem .75rem;margin-top:.2rem}
+ .chip{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;padding:.3rem .55rem;border:1px solid #17181b;color:#17181b;white-space:nowrap}
+ .chip.solid{background:#17181b;color:#fff}
+ .chip.dash{border-style:dashed;color:#3c3e44}
+ .chip.warn{border-color:#8a2b2b;color:#8a2b2b}
+
+ /* materials */
+ .mtable{width:100%;border-collapse:collapse}
+ .mtable th{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:#8b8f97;text-align:left;font-weight:500;padding:.5rem .7rem;border-bottom:1px solid #17181b}
+ .mtable td{padding:.75rem .7rem;border-bottom:1px dotted rgba(23,24,27,.2);font-size:.88rem;vertical-align:middle}
+ .mtable .nm{font-family:"Playfair Display",serif;font-weight:600;font-size:1rem}
+ .mtable .mono{font-size:.72rem;color:#3c3e44}
+ .dotsw{display:inline-block;width:26px;height:26px;border:1px solid rgba(23,24,27,.4);vertical-align:middle;margin-right:.6rem}
+ @media(max-width:760px){.mtable .hide-sm{display:none}}
+
+ /* budget */
+ .btotals{display:flex;gap:2.4rem;flex-wrap:wrap;margin-bottom:1.6rem}
+ .btotals b{display:block;font-family:"Playfair Display",serif;font-size:2rem;font-weight:600;line-height:1.1}
+ .btotals span{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:#8b8f97}
+ .brow{padding:.85rem 0;border-top:1px dotted rgba(23,24,27,.2)}
+ .brow .l{display:flex;justify-content:space-between;gap:1rem;font-size:.88rem;margin-bottom:.45rem}
+ .brow .l .amt{font-family:"JetBrains Mono",monospace;font-size:.7rem;color:#3c3e44}
+ .brow .l .amt b{color:#17181b;font-weight:500}
+ .bar2{position:relative;height:14px;border:1px solid rgba(23,24,27,.35)}
+ .bar2 .est{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(23,24,27,.16) 0 3px,transparent 3px 7px)}
+ .bar2 .act{position:absolute;left:0;top:3px;bottom:3px;background:#17181b}
+ .over{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.1em;color:#8a2b2b}
+ .ms{display:flex;align-items:center;gap:1rem;padding:.8rem 0;border-top:1px dotted rgba(23,24,27,.2);flex-wrap:wrap}
+ .ms .d{font-family:"JetBrains Mono",monospace;font-size:.62rem;color:#8b8f97;width:5.4rem}
+ .ms .t{flex:1;font-size:.9rem}
+ .ms .a{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:#17181b}
+
+ /* messages */
+ .msgs{display:flex;flex-direction:column;gap:.9rem;max-height:52vh;overflow:auto;padding:.2rem .2rem 1rem}
+ .msg{max-width:78%;padding:.8rem .95rem;font-size:.88rem;line-height:1.6;position:relative}
+ .msg .who{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:#8b8f97;display:block;margin-bottom:.3rem}
+ .msg .tt{font-family:"JetBrains Mono",monospace;font-size:.52rem;color:#8b8f97;display:block;margin-top:.4rem}
+.msg.studio{align-self:flex-start;background:#f6f7f9;border:1px solid rgba(23,24,27,.35)}
+ .msg.client{align-self:flex-end;background:#17181b;color:#f4f5f7}
+ .msg.client .who,.msg.client .tt{color:#9aa0a8}
+ .composer{display:flex;gap:.7rem;border-top:1px solid #17181b;padding-top:1rem;margin-top:.4rem}
+ .composer input{flex:1;font:inherit;font-size:.92rem;background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.3);padding:.55rem 0;outline:none;color:#17181b}
+ .composer input:focus{border-bottom-color:#17181b}
+
+ /* schedule */
+ .tl{position:relative;padding-left:1.6rem}
+ .tl::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:1px;background:rgba(23,24,27,.3)}
+ .tli{position:relative;padding:.85rem 0 .85rem .4rem}
+ .tli .mark{position:absolute;left:-1.6rem;top:1.15rem;width:13px;height:13px;border:1px solid #17181b;background:#edeff2}
+ .tli.done .mark{background:#17181b}
+ .tli.next .mark{box-shadow:0 0 0 4px rgba(23,24,27,.12)}
+ .tli .d{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:#8b8f97}
+ .tli .t{font-family:"Playfair Display",serif;font-size:1.12rem;font-weight:600;margin:.15rem 0}
+ .tli.done .t{color:#6b6f76}
+#offline{display:none;max-width:34rem;margin:14vh auto}
+@media(max-width:720px){
+  header.p-hdr{padding:.85rem 1rem;gap:.75rem}
+  .p-hdr .right{width:100%;margin-left:0;justify-content:space-between;gap:.65rem}
+  .p-hdr .who{max-width:calc(100vw - 9rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  aside.nav{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding:.45rem .75rem;scrollbar-width:none}
+  aside.nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;min-height:44px;white-space:nowrap}
+  .stepper{grid-template-columns:1fr;gap:.6rem;margin-top:1.2rem}
+  .step{padding:.15rem 0 .15rem 1.6rem}
+  .step::before{left:.4rem;right:auto;top:0;bottom:0;width:1px;height:auto}
+  .step:first-child::before{left:.4rem}.step:last-child::before{right:auto}
+  .step .dot{left:.4rem;top:.35rem;transform:none}
+  .step .nm{text-align:left;padding-left:.35rem}
+  .pills{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:.35rem;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pill,.p-btn{min-height:44px}
+  .mgrid{grid-template-columns:minmax(0,1fr)}
+  .card{padding:1.05rem}
+  .btotals{gap:1rem}
+  .btotals>div{min-width:9rem}
+  .msg{max-width:92%}
+  .composer{flex-direction:column}
+  .composer .p-btn{justify-content:center}
+  .mtable{min-width:34rem}
+}
+</style></head>
+<body class="e-page">
+<canvas id="gridfx" style="position:fixed;inset:0;z-index:0;width:100%;height:100%;pointer-events:none"></canvas>
+
+<div id="gate" hidden>
+  <div class="gate-card">
+    <p class="kick">Elevé — Client Portal</p>
+    <h1>Your project, <em>in one place</em></h1>
+    <p class="sub">Moodboards, renders, approvals, materials, budget and schedule — the working room between you and the studio.</p>
+    <form id="gateForm">
+      <label for="gEmail">Email</label>
+      <input id="gEmail" type="email" required placeholder="you@email.com" autocomplete="email">
+      <label for="gPass">Password</label>
+      <input id="gPass" type="password" required placeholder="••••••••" autocomplete="current-password">
+      <button class="p-btn solid" type="submit" id="gateBtn">Enter the portal →</button>
+      <p class="gate-err" id="gateErr" role="alert"></p>
+    </form>
+    <p class="gate-note">Access is created by the studio. Sign in with the details we sent you — if you don't have them yet, ask your project contact.</p>
+  </div>
+</div>
+
+<div id="offline" class="card tick">
+  <h3>Server required</h3>
+  <p style="margin:.2rem 0 1rem;line-height:1.7;color:#3c3e44">The Client Portal is powered by the studio server. Start it, then try again:</p>
+  <p class="mono" style="font-size:.8rem;background:#eceef1;border:1px solid rgba(23,24,27,.25);padding:.8rem">cd server && npm start</p>
+  <button class="p-btn solid" id="offlineRetry">Retry</button>
+</div>
+
+<div id="app" hidden>
+<header class="p-hdr">
+  <a class="logo" href="index.html">ELEVÉ</a>
+  <span class="sect">— Client Portal</span>
+  <div class="right">
+    <span class="who mono" id="whoAmI"></span>
+    <button class="p-btn" id="signOut">Sign out</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="nav">
+    <p class="lbl">Workspace</p>
+    <button data-no="01" data-tab="dash" class="on">Dashboard</button>
+    <button data-no="02" data-tab="mood">Moodboards <span class="badge" id="bMood"></span></button>
+    <button data-no="03" data-tab="rend">Renders</button>
+    <button data-no="04" data-tab="appr">Approvals <span class="badge" id="bAppr"></span></button>
+    <button data-no="05" data-tab="mat">Materials</button>
+    <button data-no="06" data-tab="budg">Budget</button>
+    <button data-no="07" data-tab="msg">Messages</button>
+    <button data-no="08" data-tab="sched">Schedule</button>
+    <div class="phase-mini"><p class="t">Current phase</p><p class="v" id="phaseMini">—</p></div>
+  </aside>
+
+  <main class="panel-host">
+    <section class="panel on" id="p-dash"></section>
+    <section class="panel" id="p-mood"></section>
+    <section class="panel" id="p-rend"></section>
+    <section class="panel" id="p-appr"></section>
+    <section class="panel" id="p-mat"></section>
+    <section class="panel" id="p-budg"></section>
+    <section class="panel" id="p-msg"></section>
+    <section class="panel" id="p-sched"></section>
+  </main>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var base=(function(){
+  if(location.protocol==="file:") return "http://localhost:4000";
+  var p=location.port;
+  if(p==="4000"||p===""||p==="80"||p==="443") return "";
+  return "http://localhost:4000";
+})();
+var TK="eleve_token";
+var P=null, ME=null;
+var state={ room:"living", rrRoom:"living", rrVer:{}, thread:"t1", matFilter:"All" };
+
+function tok(){ try{return localStorage.getItem(TK);}catch(e){return null;} }
+var quietT=0; /* own actions echo back over the live stream — don't toast for them */
+function api(path,method,body){
+  if(method&&method!=="GET") quietT=Date.now()+2500;
+  return fetch(base+"/api"+path,{ method:method||"GET",
+    headers:Object.assign({"Content-Type":"application/json"}, tok()?{Authorization:"Bearer "+tok()}:{}),
+    body:body?JSON.stringify(body):undefined })
+  .then(function(r){ if(r.status===401){ throw {auth:true}; } return r.json().then(function(j){ if(!r.ok) throw j; return j; }); });
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function attr(s){ return esc(s).replace(/'/g,"&#39;"); }
+function cls(s){ s=String(s==null?"":s); return /^[A-Za-z0-9_-]+$/.test(s)?s:""; }
+/* studio uploads (data:/http/path) render as photos; anything else stays a gradient swatch */
+function safeImg(v){
+  v=String(v==null?"":v).trim();
+  if(!v || /[\r\n"'()\\]/.test(v)) return "";
+  if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v)) return v;
+  if(/^blob:https?:\/\//i.test(v) || /^https?:\/\/[^\s]+$/i.test(v)) return v;
+  if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(v)) return v;
+  return "";
+}
+function swCSS(v){ v=String(v==null?"":v).trim();
+  var img=safeImg(v), sw=/^(?:linear-gradient|radial-gradient)\([^"'<>\\]*\)$|^#[0-9a-f]{3,8}$/i.test(v)?v:"#e8eaee";
+  return img ? "background:#e8eaee url('"+img+"') center/cover no-repeat" : "background:"+sw; }
+function eur(n){ return "€"+Number(n||0).toLocaleString("en-GB"); }
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtD(t){ var d=new Date(t); return d.getDate()+" "+MON[d.getMonth()]; }
+function fmtDY(t){ var d=new Date(t); return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear(); }
+function daysTo(t){ return Math.round((t-Date.now())/86400000); }
+
+/* ---------- auth gate ---------- */
+var gate=document.getElementById("gate"), app=document.getElementById("app"), off=document.getElementById("offline");
+function showGate(msg){ gate.hidden=false; app.hidden=true; off.style.display="none"; if(msg) document.getElementById("gateErr").textContent=msg; }
+document.getElementById("gateForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var email=document.getElementById("gEmail").value.trim(), pass=document.getElementById("gPass").value;
+  var btn=document.getElementById("gateBtn"), err=document.getElementById("gateErr");
+  btn.disabled=true; btn.textContent="One moment…"; err.textContent="";
+  /* sign-in only — accounts are created by the studio in the CMS, never from here */
+  fetch(base+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pass})})
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw j; return j; }); })
+    .then(function(j){ localStorage.setItem(TK,j.token); btn.disabled=false; btn.innerHTML="Enter the portal →"; boot(); })
+    .catch(function(x){ btn.disabled=false; btn.innerHTML="Enter the portal →";
+      err.textContent=(x&&x.error==="Invalid credentials")?"Unknown email or wrong password — your access is set up by the studio."
+        :((x&&x.error)||"Could not reach the studio server."); });
+});
+document.getElementById("signOut").addEventListener("click",function(){
+  eleveUI.confirm("Sign out of the portal? This also signs you out of the room builder's cloud saves.",{title:"Sign out",ok:"Sign out"})
+    .then(function(ok){ if(ok){ try{localStorage.removeItem(TK);}catch(e){} location.reload(); } });
+});
+document.getElementById("offlineRetry").addEventListener("click",function(){ location.reload(); });
+
+/* ---------- boot + live sync ---------- */
+var pollT=null, esrc=null, refreshing=false;
+function refresh(){
+  if(refreshing) return; refreshing=true;
+  var studioMsgs=function(p){ return p?p.threads.reduce(function(s,t){ return s+t.messages.filter(function(m){return m.by==="studio";}).length; },0):0; };
+  api("/portal").then(function(j){
+    refreshing=false;
+    if(!P||j.portal.updatedAt!==P.updatedAt){
+      var hadProject=!!(P&&P.project), oldStudio=studioMsgs(P);
+      P=j.portal; renderAll();
+      if(!hadProject&&P.project) eleveUI.toast("Your project has been published ✓");
+      else if(studioMsgs(P)>oldStudio) eleveUI.toast("New message from the studio");
+      else if(Date.now()>quietT) eleveUI.toast("Updated by the studio");
+    }
+  }).catch(function(){ refreshing=false; });
+}
+function startLive(){
+  /* realtime: the server pushes over SSE the instant anything changes —
+     no reload needed. The slow poll below is only a safety net. */
+  if(window.EventSource&&tok()){
+    try{ if(esrc) esrc.close(); }catch(e){}
+    esrc=new EventSource(base+"/api/portal/events?t="+encodeURIComponent(tok()));
+    esrc.onmessage=function(ev){
+      var d=null; try{ d=JSON.parse(ev.data); }catch(e){}
+      if(!d||!P||d.updatedAt!==P.updatedAt) refresh();
+    };
+  }
+  clearInterval(pollT);
+  pollT=setInterval(function(){ if(document.visibilityState==="visible") refresh(); },20000);
+}
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"&&P) refresh(); });
+function boot(){
+  api("/portal").then(function(j){
+    P=j.portal; ME=j.user;
+    gate.hidden=true; off.style.display="none"; app.hidden=false;
+    document.getElementById("whoAmI").textContent=(ME&&ME.email)||"";
+    renderAll(); startLive();
+  }).catch(function(x){
+    if(x&&x.auth){ showGate(); }
+    else { gate.hidden=true; app.hidden=true; off.style.display="block"; }
+  });
+}
+
+/* ---------- nav ---------- */
+var tabs=document.querySelectorAll(".nav button[data-tab]");
+tabs.forEach(function(b){ b.addEventListener("click",function(){ show(b.getAttribute("data-tab")); }); });
+function show(id){
+  tabs.forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-tab")===id); });
+  document.querySelectorAll(".panel").forEach(function(p){ p.classList.toggle("on",p.id==="p-"+id); });
+}
+
+/* ---------- shared bits ---------- */
+function waitingCard(title){
+  return '<div class="ph"><p class="kick">'+esc(title)+'</p><h2>Being <em>prepared</em></h2></div>'+
+    '<div class="card tick" style="max-width:34rem"><h3>Your studio is at work</h3>'+
+    '<p style="margin:.2rem 0 0;line-height:1.75;color:#3c3e44">This part of your workspace hasn’t been published yet. '+
+    'The studio curates every section by hand — it will appear here the moment it’s ready.</p></div>';
+}
+function commentsFor(ref){ return (P.comments&&P.comments[ref])||[]; }
+function commentDialog(ref,title){
+  var cs=commentsFor(ref);
+  var hist=cs.length? cs.map(function(c){ return (c.by==="studio"?("["+(c.who||"Studio")+"] "):"[You] ")+c.text; }).join("\n\n") : "No comments yet — start the thread.";
+  eleveUI.prompt(hist,{title:title||"Comments",placeholder:"Write a comment…",ok:"Send",cancel:"Close"}).then(function(text){
+    if(!text||!text.trim()) return;
+    api("/portal/comment","POST",{refId:ref,text:text}).then(function(j){
+      P.comments[ref]=P.comments[ref]||[]; P.comments[ref].push(j.comment);
+      eleveUI.toast("Comment sent to the studio ✓"); renderAll();
+    }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not send.",{title:"Comments"}); });
+  });
+}
+
+/* ---------- dashboard ---------- */
+function renderDash(){
+  if(!P.project){
+    document.getElementById("p-dash").innerHTML=
+      '<div class="ph"><p class="kick">01 — Dashboard</p><h2>Welcome to your <em>workspace</em></h2></div>'+
+      '<div class="card tick" style="max-width:38rem"><h3>The studio is preparing your project</h3>'+
+      '<p style="margin:.2rem 0 1rem;line-height:1.75;color:#3c3e44">Your private project space has been created. '+
+      'Moodboards, renders, approvals, materials, budget and schedule will appear here as the studio publishes them — '+
+      'you’ll see everything the moment it’s ready.</p>'+
+      '<p class="mono" style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#8b8f97">In the meantime, the Messages tab is open — say hello.</p></div>';
+    document.getElementById("phaseMini").textContent="—";
+    return;
+  }
+  var pr=P.project, pend=P.approvals.filter(function(a){return a.status==="pending";}).length;
+  var back=P.materials.filter(function(m){return m.status==="back";}).length;
+  var nextMs=P.budget.milestones.find(function(m){return m.status==="due";});
+  var awaiting=P.renders.rooms.filter(function(r){return !r.approved;}).length;
+  var steps=pr.phases.map(function(nm,i){
+    return '<div class="step '+(i<pr.phase?"done":(i===pr.phase?"now":""))+'"><span class="dot"></span><span class="nm">'+esc(nm)+'</span></div>';
+  }).join("");
+  var acts=P.actions.map(function(a){
+    return '<div class="act'+(a.done?" done":"")+'" data-id="'+attr(a.id)+'" data-tab="'+attr(a.tab)+'">'+
+      '<span class="box" data-box>'+(a.done?"✓":"")+'</span><span class="tx">'+esc(a.label)+'</span><span class="go">Open →</span></div>';
+  }).join("");
+  document.getElementById("p-dash").innerHTML=
+    '<div class="proj-head">'+
+      '<div><p class="kick mono" style="font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:#8b8f97;margin:0 0 .5rem">Project '+esc(pr.code)+'</p>'+
+      '<h2>'+esc(pr.name).replace(/ (\S+)$/,' <em>$1</em>')+'</h2></div>'+
+      '<div class="meta"><span>'+esc(pr.location)+'</span><span>Started <b>'+fmtDY(pr.startedAt)+'</b></span><span>Reveal <b>'+fmtDY(pr.targetAt)+'</b></span></div>'+
+    '</div>'+
+    '<div class="card tick"><h3>Project phase <span class="mono" style="letter-spacing:.1em">'+(pr.phase+1)+' / '+pr.phases.length+'</span></h3>'+
+      '<div class="stepper">'+steps+'</div></div>'+
+    '<div class="grid2">'+
+      '<div class="card tick"><h3>Next actions <span class="mono">'+P.actions.filter(function(a){return !a.done;}).length+' open</span></h3>'+acts+'</div>'+
+      '<div class="stats">'+
+        '<div class="stat"><b>'+pend+'</b><span>Approvals waiting</span></div>'+
+        '<div class="stat"><b>'+awaiting+'</b><span>Renders to sign off</span></div>'+
+        '<div class="stat"><b>'+back+'</b><span>Items backordered</span></div>'+
+        '<div class="stat"><b>'+(nextMs?eur(nextMs.amount):"—")+'</b><span>'+(nextMs?("Milestone due "+fmtD(nextMs.due)):"No payment due")+'</span></div>'+
+      '</div>'+
+    '</div>'+
+    ((P.activity&&P.activity.length)?
+      '<div class="card tick" style="margin-top:1.2rem"><h3>Recent activity</h3>'+
+      P.activity.slice(0,8).map(function(a){
+        return '<div style="display:flex;gap:1rem;align-items:baseline;padding:.5rem 0;border-top:1px dotted rgba(23,24,27,.16)">'+
+          '<span class="mono" style="font-size:.6rem;color:#8b8f97;width:5.2rem;flex:none">'+fmtD(a.t)+'</span>'+
+          '<span class="chip'+(a.by==="studio"?" solid":"")+'" style="flex:none">'+esc(a.by)+'</span>'+
+          '<span style="font-size:.85rem;color:#3c3e44">'+esc(a.text)+'</span></div>';
+      }).join("")+'</div>':"");
+  document.querySelectorAll("#p-dash .act").forEach(function(el){
+    el.addEventListener("click",function(e){
+      var id=el.getAttribute("data-id");
+      if(e.target.hasAttribute("data-box")){
+        var a=P.actions.find(function(x){return x.id===id;});
+        api("/portal/action","POST",{id:id,done:!a.done}).then(function(){ a.done=!a.done; renderDash(); });
+      } else show(el.getAttribute("data-tab"));
+    });
+  });
+  document.getElementById("phaseMini").textContent=pr.phases[pr.phase];
+}
+
+/* ---------- moodboards ---------- */
+function renderMood(){
+  if(!P.project||!P.moodboards.rooms.length){ document.getElementById("p-mood").innerHTML=waitingCard("02 — Moodboards"); return; }
+  var rooms=P.moodboards.rooms;
+  var room=rooms.find(function(r){return r.id===state.room;})||rooms[0];
+  var pills=rooms.map(function(r){ return '<button class="pill'+(r.id===room.id?" on":"")+'" data-room="'+attr(r.id)+'">'+esc(r.name)+'</button>'; }).join("");
+  var cards=room.items.map(function(it){
+    var re=P.reactions[it.id]||{}, cs=commentsFor(it.id).length;
+    return '<div class="mb">'+
+      '<div class="sw" style="'+swCSS(it.sw)+'">'+(re.like===true?'<span class="st">♥ Liked</span>':(re.like===false?'<span class="st">Passed</span>':""))+'</div>'+
+      '<div class="bd"><p class="nm" style="margin:0">'+esc(it.name)+'</p><p class="ct" style="margin:0">'+esc(it.cat)+'</p>'+
+      (it.ai?'<p class="ai" style="margin:.2rem 0 0">'+esc(it.ai)+'</p>':"")+
+      '<div class="row">'+
+        '<button class="p-btn'+(re.like===true?" on":"")+'" data-like="'+attr(it.id)+'">♥</button>'+
+        '<button class="p-btn'+(re.like===false?" on":"")+'" data-pass="'+attr(it.id)+'">✕</button>'+
+        '<button class="p-btn" data-alt="'+attr(it.id)+'">⟲</button>'+
+        '<button class="p-btn" data-cm="'+attr(it.id)+'">✎'+(cs?(" "+cs):"")+'</button>'+
+      '</div></div></div>';
+  }).join("");
+  document.getElementById("p-mood").innerHTML=
+    '<div class="ph"><p class="kick">02 — Moodboards &amp; concepts</p><h2>Direction, room by <em>room</em></h2>'+
+    '<p class="sub">Like what speaks to you, pass on what doesn’t, ask for alternatives — every reaction reaches the studio instantly.</p></div>'+
+    '<div class="pills">'+pills+'</div><div class="mgrid">'+cards+'</div>';
+  document.querySelectorAll("#p-mood .pill").forEach(function(b){ b.addEventListener("click",function(){ state.room=b.getAttribute("data-room"); renderMood(); }); });
+  function react(id,val){
+    var cur=(P.reactions[id]||{}).like;
+    var next=(cur===val)?null:val;
+    api("/portal/react","POST",{itemId:id,like:next}).then(function(){
+      if(next===null) delete P.reactions[id]; else P.reactions[id]={like:next};
+      renderMood(); if(next===true) eleveUI.toast("Noted — the studio will build on this ✓");
+      if(next===false) eleveUI.toast("Passed — we’ll steer away from it");
+    });
+  }
+  document.querySelectorAll("[data-like]").forEach(function(b){ b.addEventListener("click",function(){ react(b.getAttribute("data-like"),true); }); });
+  document.querySelectorAll("[data-pass]").forEach(function(b){ b.addEventListener("click",function(){ react(b.getAttribute("data-pass"),false); }); });
+  document.querySelectorAll("[data-cm]").forEach(function(b){ b.addEventListener("click",function(){
+    var it=room.items.find(function(x){return x.id===b.getAttribute("data-cm");});
+    commentDialog(it.id, it.name+" — comments"); }); });
+  document.querySelectorAll("[data-alt]").forEach(function(b){ b.addEventListener("click",function(){
+    var it=room.items.find(function(x){return x.id===b.getAttribute("data-alt");});
+    var alts=["A quieter version of this — same family, softer tone","A bolder counterpart — deeper grain / stronger presence","Surprise me — studio’s pick"+(it.ai?"  ✦ AI will match your liked palette":"")];
+    eleveUI.choose("How should the alternative for “"+it.name+"” lean?",alts,{title:"Request an alternative"}).then(function(i){
+      if(i==null) return;
+      api("/portal/comment","POST",{refId:it.id,text:"Alternative requested — "+alts[i]}).then(function(j){
+        P.comments[it.id]=P.comments[it.id]||[]; P.comments[it.id].push(j.comment);
+        eleveUI.toast("Alternative requested ✓"); renderMood();
+      });
+    });
+  }); });
+}
+
+/* ---------- renders ---------- */
+function renderRend(){
+  if(!P.project||!P.renders.rooms.length){ document.getElementById("p-rend").innerHTML=waitingCard("03 — Renders"); return; }
+  var rooms=P.renders.rooms;
+  var room=rooms.find(function(r){return r.id===state.rrRoom;})||rooms[0];
+  var curV=state.rrVer[room.id]||room.versions[room.versions.length-1].v;
+  var ver=room.versions.find(function(v){return v.v===curV;})||room.versions[0];
+  var roomPills=rooms.map(function(r){ return '<button class="pill'+(r.id===room.id?" on":"")+'" data-rr="'+attr(r.id)+'">'+esc(r.name)+'</button>'; }).join("");
+  var verPills=room.versions.map(function(v){ return '<button class="pill'+(v.v===ver.v?" on":"")+'" data-rv="'+attr(v.v)+'">'+esc(v.label)+(room.approved===v.v?" ✓":"")+'</button>'; }).join("");
+  var ref="render:"+room.id+":"+ver.v, cs=commentsFor(ref).length;
+  document.getElementById("p-rend").innerHTML=
+    '<div class="ph"><p class="kick">03 — Renders &amp; visualisations</p><h2>See it before it <em>exists</em></h2>'+
+    '<p class="sub">Drag the divider to compare the space as found against the design. Approve a version, or ask for changes on it.</p></div>'+
+    '<div class="pills">'+roomPills+'</div>'+
+    '<div class="pills" style="margin-top:-0.6rem">'+verPills+'</div>'+
+    '<div class="ba" id="baBox" style="--x:50%">'+
+      '<div class="before" style="'+swCSS(ver.before)+'"></div>'+
+      '<div class="after" style="'+swCSS(ver.after)+'"></div>'+
+      '<span class="tag b">Before</span><span class="tag a">'+esc(ver.label)+'</span><span class="bar"></span>'+
+    '</div>'+
+    '<div class="rmeta"><span class="rnote">'+esc(ver.note)+' · version '+esc(ver.v)+'</span>'+
+    '<span style="display:flex;gap:.5rem;flex-wrap:wrap">'+
+      (room.approved===ver.v?'<span class="appr-chip">Approved ✓</span>':'<button class="p-btn solid" id="rApprove">Approve this version</button>')+
+      '<button class="p-btn" id="rChanges">Request changes</button>'+
+      '<button class="p-btn" id="rComments">✎ Comments'+(cs?(" · "+cs):"")+'</button>'+
+    '</span></div>';
+  document.querySelectorAll("[data-rr]").forEach(function(b){ b.addEventListener("click",function(){ state.rrRoom=b.getAttribute("data-rr"); renderRend(); }); });
+  document.querySelectorAll("[data-rv]").forEach(function(b){ b.addEventListener("click",function(){ state.rrVer[room.id]=b.getAttribute("data-rv"); renderRend(); }); });
+  var box=document.getElementById("baBox"), dragging=false;
+  function setX(e){ var r=box.getBoundingClientRect(); var x=Math.max(4,Math.min(96,((e.clientX-r.left)/r.width)*100)); box.style.setProperty("--x",x+"%"); }
+  box.addEventListener("pointerdown",function(e){ dragging=true; setX(e); box.setPointerCapture&&box.setPointerCapture(e.pointerId); });
+  box.addEventListener("pointermove",function(e){ if(dragging) setX(e); });
+  box.addEventListener("pointerup",function(){ dragging=false; });
+  box.addEventListener("pointercancel",function(){ dragging=false; });
+  var ap=document.getElementById("rApprove");
+  if(ap) ap.addEventListener("click",function(){
+    eleveUI.confirm("Approve “"+ver.label+"” for the "+room.name+"? The studio will proceed on this basis.",{title:"Approve render",ok:"Approve"}).then(function(ok){
+      if(!ok) return;
+      api("/portal/render-approve","POST",{roomId:room.id,version:ver.v}).then(function(){
+        room.approved=ver.v; eleveUI.toast(room.name+" — "+ver.label+" approved ✓"); renderRend(); renderDash();
+      });
+    });
+  });
+  document.getElementById("rChanges").addEventListener("click",function(){
+    eleveUI.prompt("What should change in "+room.name+" ("+ver.label+")?",{title:"Request changes",placeholder:"Tell the studio…",ok:"Send"}).then(function(t){
+      if(!t||!t.trim()) return;
+      api("/portal/comment","POST",{refId:ref,text:"Change request — "+t}).then(function(j){
+        P.comments[ref]=P.comments[ref]||[]; P.comments[ref].push(j.comment);
+        eleveUI.toast("Change request sent ✓"); renderRend();
+      });
+    });
+  });
+  document.getElementById("rComments").addEventListener("click",function(){ commentDialog(ref, room.name+" · "+ver.label); });
+}
+
+/* ---------- approvals ---------- */
+function renderAppr(){
+  if(!P.project||!P.approvals.length){ document.getElementById("p-appr").innerHTML=waitingCard("04 — Approvals"); return; }
+  var rows=P.approvals.map(function(a){
+    var due=daysTo(a.due);
+    var when=a.status==="pending" ? (due<0?'<span class="chip warn">Overdue '+(-due)+'d</span>':'<span class="chip dash">Due in '+due+'d</span>')
+      : '<span class="mono" style="font-size:.6rem;color:#8b8f97">'+fmtDY(a.decidedAt)+'</span>';
+    var st=a.status==="approved"?'<span class="chip solid">Approved</span>':(a.status==="changes"?'<span class="chip">Changes requested</span>':"");
+    var btns=a.status==="pending"
+      ? '<button class="p-btn solid" data-ok="'+attr(a.id)+'">Approve</button><button class="p-btn" data-ch="'+attr(a.id)+'">Request changes</button>' : "";
+    return '<div class="aprow"><div class="t"><b>'+esc(a.title)+'</b><span>'+esc(a.room)+'</span></div>'+when+st+btns+
+      (a.note?'<p class="note">“'+esc(a.note)+'”</p>':"")+'</div>';
+  }).join("");
+  document.getElementById("p-appr").innerHTML=
+    '<div class="ph"><p class="kick">04 — Approvals</p><h2>Decisions, <em>structured</em></h2>'+
+    '<p class="sub">Every sign-off lives here with its deadline — no threads to dig through, no ambiguity about what was agreed.</p></div>'+
+    '<div class="card tick">'+rows+'</div>';
+  document.querySelectorAll("[data-ok]").forEach(function(b){ b.addEventListener("click",function(){
+    var a=P.approvals.find(function(x){return x.id===b.getAttribute("data-ok");});
+    eleveUI.confirm("Approve “"+a.title+"”?",{title:"Approve",ok:"Approve"}).then(function(ok){
+      if(!ok) return;
+      api("/portal/approve","POST",{id:a.id,action:"approve"}).then(function(j){
+        Object.assign(a,j.approval); eleveUI.toast("Approved ✓"); renderAppr(); renderDash();
+      });
+    });
+  }); });
+  document.querySelectorAll("[data-ch]").forEach(function(b){ b.addEventListener("click",function(){
+    var a=P.approvals.find(function(x){return x.id===b.getAttribute("data-ch");});
+    eleveUI.prompt("What should change before you can approve “"+a.title+"”?",{title:"Request changes",placeholder:"Be as specific as you like…",ok:"Send"}).then(function(t){
+      if(!t||!t.trim()) return;
+      api("/portal/approve","POST",{id:a.id,action:"changes",note:t}).then(function(j){
+        Object.assign(a,j.approval); eleveUI.toast("Sent — the studio will revise ✓"); renderAppr(); renderDash();
+      });
+    });
+  }); });
+}
+
+/* ---------- materials ---------- */
+function renderMat(){
+  if(!P.project||!P.materials.length){ document.getElementById("p-mat").innerHTML=waitingCard("05 — Materials"); return; }
+  var cats=["All"].concat(P.materials.map(function(m){return m.cat;}).filter(function(v,i,a){return a.indexOf(v)===i;}));
+  var pills=cats.map(function(c){ return '<button class="pill'+(state.matFilter===c?" on":"")+'" data-mc="'+attr(c)+'">'+esc(c)+'</button>'; }).join("");
+  var list=P.materials.filter(function(m){ return state.matFilter==="All"||m.cat===state.matFilter; });
+  var sw={Stone:"linear-gradient(135deg,#c9cdd4,#a9aeb6)",Wood:"linear-gradient(135deg,#cdd1d7,#b2b7bf)",Paint:"linear-gradient(135deg,#eceef1,#d3d6db)",Lighting:"linear-gradient(135deg,#dfe1e5,#bfc4cb)",Fabric:"linear-gradient(135deg,#e6e8eb,#c9cdd4)"};
+  var rows=list.map(function(m){
+    var st=m.status==="stock"?'<span class="chip solid">In stock</span>':(m.status==="lead"?'<span class="chip">Lead '+esc(m.lead||"")+'</span>':'<span class="chip dash">Backordered</span>');
+    return '<tr><td><span class="dotsw" style="background:'+(sw[m.cat]||sw.Stone)+'"></span><span class="nm">'+esc(m.name)+'</span></td>'+
+      '<td class="hide-sm">'+esc(m.cat)+'</td><td class="hide-sm">'+esc(m.finish)+'</td>'+
+      '<td class="mono">'+esc(m.sku)+'</td><td class="hide-sm">'+esc(m.supplier)+'</td><td class="hide-sm">'+esc(m.room)+'</td><td>'+st+'</td></tr>';
+  }).join("");
+  document.getElementById("p-mat").innerHTML=
+    '<div class="ph"><p class="kick">05 — Materials &amp; selections</p><h2>The spec book, <em>alive</em></h2>'+
+    '<p class="sub">Every confirmed surface and fixture with its supplier, reference and real availability.</p></div>'+
+    '<div class="pills">'+pills+'</div>'+
+    '<div class="card tick" style="overflow-x:auto"><table class="mtable"><thead><tr>'+
+    '<th>Item</th><th class="hide-sm">Category</th><th class="hide-sm">Finish</th><th>Ref</th><th class="hide-sm">Supplier</th><th class="hide-sm">Room</th><th>Status</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.querySelectorAll("[data-mc]").forEach(function(b){ b.addEventListener("click",function(){ state.matFilter=b.getAttribute("data-mc"); renderMat(); }); });
+}
+
+/* ---------- budget ---------- */
+function renderBudg(){
+  if(!P.project||!P.budget.categories.length){ document.getElementById("p-budg").innerHTML=waitingCard("06 — Budget"); return; }
+  var cats=P.budget.categories;
+  var estT=cats.reduce(function(s,c){return s+c.est;},0), actT=cats.reduce(function(s,c){return s+c.actual;},0);
+  var max=Math.max.apply(null,cats.map(function(c){return Math.max(c.est,c.actual);}));
+  var rows=cats.map(function(c){
+    var over=c.actual>c.est;
+    return '<div class="brow"><div class="l"><span>'+esc(c.name)+(over?' <span class="over">· over</span>':"")+'</span>'+
+      '<span class="amt">est '+eur(c.est)+' · <b>actual '+eur(c.actual)+'</b></span></div>'+
+      '<div class="bar2"><span class="est" style="width:'+(c.est/max*100).toFixed(1)+'%"></span>'+
+      '<span class="act" style="width:'+(c.actual/max*100).toFixed(1)+'%"></span></div></div>';
+  }).join("");
+  var ms=P.budget.milestones.map(function(m){
+    var chip=m.status==="paid"?'<span class="chip solid">Paid</span>':(m.status==="due"?'<span class="chip warn">Due</span>':'<span class="chip dash">Upcoming</span>');
+    return '<div class="ms"><span class="d">'+fmtD(m.due)+'</span><span class="t">'+esc(m.label)+'</span><span class="a">'+eur(m.amount)+'</span>'+chip+'</div>';
+  }).join("");
+  document.getElementById("p-budg").innerHTML=
+    '<div class="ph"><p class="kick">06 — Budget &amp; procurement</p><h2>Every euro, <em>accounted</em></h2>'+
+    '<p class="sub">Estimated against actual, per category — hatched is the estimate, solid ink is committed spend.</p></div>'+
+    '<div class="btotals"><div><b>'+eur(estT)+'</b><span>Estimated</span></div><div><b>'+eur(actT)+'</b><span>Committed</span></div>'+
+    '<div><b>'+eur(estT-actT)+'</b><span>Remaining</span></div></div>'+
+    '<div class="grid2"><div class="card tick"><h3>By category</h3>'+rows+'</div>'+
+    '<div class="card tick"><h3>Payment milestones</h3>'+ms+'</div></div>';
+}
+
+/* ---------- messages ---------- */
+function renderMsg(){
+  var th=P.threads.find(function(t){return t.id===state.thread;})||P.threads[0];
+  /* live re-renders must never eat a half-typed message or jump the scroll */
+  var oldIn=document.getElementById("msgIn");
+  var draft=oldIn?oldIn.value:"", hadFocus=oldIn&&document.activeElement===oldIn;
+  var oldList=document.getElementById("msgList");
+  var stick=!oldList||(oldList.scrollHeight-oldList.scrollTop-oldList.clientHeight)<48;
+  var keepY=oldList?oldList.scrollTop:0;
+  var pills=P.threads.map(function(t){ return '<button class="pill'+(t.id===th.id?" on":"")+'" data-th="'+attr(t.id)+'">'+esc(t.title)+' <span style="opacity:.6">'+t.messages.length+'</span></button>'; }).join("");
+  var ms=th.messages.map(function(m){
+    return '<div class="msg '+(m.by==="studio"?"studio":"client")+'">'+
+      (m.by==="studio"?'<span class="who">'+esc(m.who||"Studio")+'</span>':"")+esc(m.text)+
+      '<span class="tt">'+fmtDY(m.t)+'</span></div>';
+  }).join("");
+  document.getElementById("p-msg").innerHTML=
+    '<div class="ph"><p class="kick">07 — Communication hub</p><h2>One thread, no <em>chaos</em></h2>'+
+    '<p class="sub">Designer, architect and project manager — all replies live here, attached to your project forever.</p></div>'+
+    '<div class="pills">'+pills+'</div>'+
+    '<div class="card tick"><div class="msgs" id="msgList">'+ms+'</div>'+
+    '<div class="composer"><input id="msgIn" placeholder="Write to the studio…" maxlength="4000">'+
+    '<button class="p-btn solid" id="msgSend">Send</button></div></div>';
+  document.querySelectorAll("[data-th]").forEach(function(b){ b.addEventListener("click",function(){ state.thread=b.getAttribute("data-th"); renderMsg(); var l=document.getElementById("msgList"); l.scrollTop=l.scrollHeight; }); });
+  var list=document.getElementById("msgList");
+  list.scrollTop=stick?list.scrollHeight:keepY;
+  var inpEl=document.getElementById("msgIn"); inpEl.value=draft;
+  if(hadFocus){ inpEl.focus(); try{ inpEl.setSelectionRange(draft.length,draft.length); }catch(e){} }
+  function send(){
+    var inp=document.getElementById("msgIn"), t=inp.value.trim(); if(!t) return;
+    inp.value="";
+    api("/portal/message","POST",{threadId:th.id,text:t}).then(function(j){
+      th.messages.push(j.message); renderMsg();
+      var l=document.getElementById("msgList"); l.scrollTop=l.scrollHeight;
+    }).catch(function(x){ inp.value=t; eleveUI.alert((x&&x.error)||"Could not send.",{title:"Messages"}); });
+  }
+  document.getElementById("msgSend").addEventListener("click",send);
+  document.getElementById("msgIn").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); send(); } });
+}
+
+/* ---------- schedule ---------- */
+function renderSched(){
+  if(!P.project||!P.schedule.length){ document.getElementById("p-sched").innerHTML=waitingCard("08 — Schedule"); return; }
+  var KIND={phase:"Phase",site:"Site visit",delivery:"Delivery",install:"Installation"};
+  var items=P.schedule.slice().sort(function(a,b){return a.date-b.date;}).map(function(s){
+    return '<div class="tli '+cls(s.status)+'"><span class="mark"></span>'+
+      '<p class="d" style="margin:0">'+fmtDY(s.date)+' · '+(KIND[s.kind]||s.kind)+(s.status==="next"?" — next":"")+'</p>'+
+      '<p class="t" style="margin:0">'+esc(s.title)+'</p></div>';
+  }).join("");
+  document.getElementById("p-sched").innerHTML=
+    '<div class="ph"><p class="kick">08 — Schedule &amp; milestones</p><h2>The road to the <em>reveal</em></h2>'+
+    '<p class="sub">Phases, site visits, deliveries and the installation week — the whole engagement on one line.</p></div>'+
+    '<div class="card tick"><div class="tl">'+items+'</div></div>';
+}
+
+function renderAll(){
+  renderDash(); renderMood(); renderRend(); renderAppr(); renderMat(); renderBudg(); renderMsg(); renderSched();
+  var pend=P.approvals.filter(function(a){return a.status==="pending";}).length;
+  document.getElementById("bAppr").textContent=pend||""; document.getElementById("bAppr").style.display=pend?"":"none";
+  var liked=Object.keys(P.reactions).length;
+  document.getElementById("bMood").textContent=liked||""; document.getElementById("bMood").style.display=liked?"":"none";
+}
+
+boot();
+})();
+</script>
+<script src="sfx.js?v=6"></script>
+<script src="site.js"></script>
+</body></html>

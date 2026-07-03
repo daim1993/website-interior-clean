@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elevé · Materials Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;border-radius:0!important}
+  :root{--ink:#17181b;--ink-soft:#3c3e44;--muted:#8b8f97;--bg1:#edeff2;--bg2:#f4f5f7;--bg3:#e8eaee;--line:#d7d9de;--paper:#f6f7f9;--paper2:#eef0f3}
+  html,body{min-height:100%}
+  body{background:#edeff2;color:var(--ink);font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .gtext{color:var(--ink)}
+  #gridfx{position:fixed;inset:0;z-index:-1;width:100%;height:100%;pointer-events:none}
+  #pfade{position:fixed;inset:0;z-index:990;pointer-events:none;opacity:1;background:linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3));transition:opacity .8s ease}
+  #pfade.out{opacity:0}
+  header{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;padding:1.1rem 1.4rem;background:rgba(237,239,242,.6);backdrop-filter:blur(20px) saturate(160%);border-bottom:1px solid rgba(23,24,27,.08)}
+  header .logo{font-family:"JetBrains Mono",monospace;font-size:.82rem;letter-spacing:.32em;border:1px solid var(--ink);padding:.4rem .6rem}
+  header nav{display:flex;gap:1.3rem;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  header nav a:hover{color:var(--ink)}
+  @media(max-width:600px){header nav{gap:.8rem;font-size:.66rem;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;padding-bottom:.15rem}header nav a{flex:none}}
+  .ui-corner{position:fixed;z-index:45;font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink);font-family:"Inter",sans-serif;pointer-events:none}
+  .ui-bl{left:1.2rem;bottom:1.1rem;border:1px solid rgba(23,24,27,.45);padding:.45rem .6rem}
+  .ui-br{right:1.2rem;bottom:1.1rem;font-family:"JetBrains Mono",monospace}
+  @media(max-width:620px){.ui-corner{display:none}}
+
+  .mat-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7rem 1rem 5rem;position:relative;z-index:5}
+  .mat-intro{text-align:center;margin-bottom:2rem;max-width:40rem}
+  .mat-intro .eyebrow{display:inline-flex;align-items:center;gap:.8rem;font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem}
+  .mat-intro .eyebrow::before,.mat-intro .eyebrow::after{content:"";width:2rem;height:1px;background:var(--ink);opacity:.4}
+  .mat-intro h1{font-family:"Playfair Display",serif;font-size:clamp(2.1rem,5.8vw,3.5rem);line-height:1.14;font-weight:600}
+  .mat-intro h1 .gtext{font-style:italic;font-weight:500;padding-right:.05em}
+  .mat-intro p{color:var(--ink-soft);margin-top:.8rem;font-size:.95rem;line-height:1.7}
+
+  .book-scene{perspective:3000px;display:flex;justify-content:center;align-items:center;margin-top:1rem;width:860px;height:480px;max-width:100%}
+  .book{--pw:430px;--ph:480px;position:relative;width:calc(var(--pw)*2);height:var(--ph);transform-style:preserve-3d;transform:rotateX(9deg)}
+  @media(max-width:980px){.book-scene{width:533px;height:305px}.book{transform:scale(.62) rotateX(9deg);transform-origin:top left}}
+  @media(max-width:620px){.book-scene{width:344px;height:206px;overflow:hidden}.book{transform:scale(.4) rotateX(9deg);transform-origin:top left}}
+  @media(max-width:380px){.book-scene{width:284px;height:170px}.book{transform:scale(.33) rotateX(9deg);transform-origin:top left}}
+  .board{position:absolute;left:-12px;top:-12px;width:calc(var(--pw)*2 + 24px);height:calc(var(--ph) + 24px);background:linear-gradient(135deg,#1d1e22,#111216);box-shadow:0 44px 90px rgba(23,24,27,.32);z-index:0}
+  .spine{position:absolute;left:50%;top:-12px;width:6px;height:calc(var(--ph) + 24px);transform:translateX(-50%);background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(0,0,0,.35),rgba(255,255,255,.06));z-index:6;pointer-events:none}
+  .endpaper{position:absolute;top:0;height:var(--ph);width:var(--pw);background:var(--paper2);z-index:1}
+  .endpaper.left{left:0}.endpaper.right{left:var(--pw)}
+  .edge{position:absolute;top:5px;height:calc(var(--ph) - 10px);width:9px;background:repeating-linear-gradient(180deg,#f4f5f7 0,#f4f5f7 2px,#dadce0 2px,#dadce0 3px);z-index:1}
+  .edge-r{left:calc(var(--pw)*2 - 9px);border-left:1px solid #cfd1d6}
+  .edge-l{left:-9px;border-right:1px solid #cfd1d6}
+  .leaves{position:absolute;inset:0;transform-style:preserve-3d;z-index:2}
+  .leaf{position:absolute;top:0;left:var(--pw);width:var(--pw);height:var(--ph);transform-origin:left center;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.3,.02,.18,1)}
+  .leaf.drag{transition:none}
+  .book-row{display:flex;align-items:center;justify-content:center;gap:3.4rem;flex-wrap:wrap;width:100%}
+  .book-col{display:flex;flex-direction:column;align-items:center}
+  .shelf-side{display:flex;flex-direction:column;gap:.9rem;align-self:center}
+  .shelf-lbl{font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);z-index:5}
+  .shelf{display:grid;grid-template-columns:repeat(2,138px);gap:1.1rem;z-index:5}
+  .minibook{position:relative;width:138px;height:176px;border:none;background:linear-gradient(150deg,#fbfbfc,#e6e8eb);box-shadow:0 16px 30px rgba(23,24,27,.18);border-left:9px solid #17181b;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:1rem .85rem;transition:transform .3s,box-shadow .3s;text-align:left}
+  .minibook:hover{transform:translateY(-7px) rotate(-1.2deg);box-shadow:0 26px 44px rgba(23,24,27,.26)}
+  .minibook .mb-name{font-family:"Playfair Display",serif;font-size:1.1rem;color:var(--ink);line-height:1.05}
+  .minibook .mb-count{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.1em;color:var(--muted);margin-top:.3rem}
+  .minibook .mb-open{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.18em;color:var(--ink);margin-top:.55rem;border-top:1px solid var(--line);padding-top:.4rem;width:100%}
+  .face{position:absolute;inset:0;backface-visibility:hidden;background:var(--paper);border:1px solid var(--line);padding:1.5rem 1.5rem 1.4rem;overflow:hidden;display:flex;flex-direction:column}
+  .face.back{transform:rotateY(180deg)}
+  .face .pno{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.2em;color:var(--muted)}
+  .swatch{width:100%;height:150px;border:1px solid var(--line);margin:.6rem 0 .9rem;position:relative}
+  .swatch::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.25),transparent 45%);pointer-events:none}
+  .face h2{font-family:"Playfair Display",serif;font-size:1.5rem;line-height:1.05;font-weight:600}
+  .face .cat{font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:.25rem 0 .55rem}
+  .face .desc{font-size:.82rem;line-height:1.5;color:var(--ink-soft);flex:1}
+  .face .props{list-style:none;margin-top:.6rem;display:grid;grid-template-columns:1fr 1fr;gap:.3rem .8rem}
+  .face .props li{font-size:.66rem;letter-spacing:.04em;color:var(--ink-soft);display:flex;justify-content:space-between;gap:.4rem;border-bottom:1px dotted var(--line);padding-bottom:.18rem}
+  .face .props b{font-weight:500;color:var(--ink)}
+  .face.cover{justify-content:center;align-items:flex-start;background:linear-gradient(150deg,#fbfbfc,#eceef1)}
+  .face.cover .big{font-family:"Playfair Display",serif;font-size:2rem;line-height:1.04;font-weight:600;margin-top:auto}
+  .face.cover .sub{font-size:.78rem;color:var(--ink-soft);margin-top:.6rem;margin-bottom:auto;line-height:1.5}
+  .face.cover .mark{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.3em;border:1px solid var(--ink);padding:.4rem .6rem;align-self:flex-start}
+  .face.endface{justify-content:center;align-items:center;text-align:center;background:linear-gradient(150deg,#f7f8f9,#e9ebee)}
+  .endlink{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.14em;border-bottom:1px solid var(--ink)}
+  .bookctl{margin-top:2.2rem;display:flex;align-items:center;justify-content:center;gap:1.1rem;z-index:5;flex-wrap:wrap;max-width:100%}
+  .bookctl button{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.5);border:1px solid var(--ink);padding:.6rem 1rem;cursor:pointer;transition:.2s}
+  .bookctl button:hover{background:var(--ink);color:#fff}
+  .bookctl .pgind{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--muted);min-width:5rem;text-align:center}
+  .hint{margin-top:1.3rem;font-size:.72rem;letter-spacing:.06em;color:var(--muted);z-index:5}
+  @media (hover:hover) and (pointer:fine){
+    body{cursor:none}a,button,.leaf,[role=button],input,select,.book{cursor:none}
+    #cur-dot{position:fixed;top:0;left:0;width:8px;height:8px;background:#17181b;z-index:1000;pointer-events:none;will-change:transform;transition:transform .08s linear,opacity .25s}
+    #cur-ring{position:fixed;top:0;left:0;width:28px;height:28px;border:1.5px solid #17181b;z-index:1000;pointer-events:none;will-change:transform,width,height;transition:width .26s cubic-bezier(.22,1,.36,1),height .26s cubic-bezier(.22,1,.36,1),background .2s}
+    #cur-ring.hover{width:46px;height:46px;background:rgba(23,24,27,.05)}
+    #cur-ring.down{width:16px;height:16px;background:rgba(23,24,27,.12)}
+  }
+  @media(prefers-reduced-motion:reduce){#pfade{display:none}.leaf{transition:none}}
+</style>
+<script src="page-turn.js"></script>
+<script src="motion.js" defer></script>
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<script src="materials-data.js"></script>
+<script src="cms.js?v=2"></script>
+<meta name="description" content="The Elevé materials library — woods, stone, metals, textiles and glass, in an interactive book you can flip through.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Materials Library — Elevé">
+<meta property="og:description" content="The Elevé materials library — woods, stone, metals, textiles and glass, in an interactive book you can flip through.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#17181b">
+<link rel="icon" href="/favicon.svg">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="canonical" href="/materials.html">
+</head>
+<body>
+<canvas id="gridfx"></canvas>
+<div id="pfade"></div>
+<header>
+  <a href="index.html" class="logo"><span class="gtext">ELEVÉ</span></a>
+  <nav>
+    <a href="index.html#services">Services</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="materials.html">Materials</a>
+    <a href="builder.html">Builder</a>
+    <a href="portal.html">Portal</a>
+    <a href="index.html#contact">Contact</a>
+  </nav>
+</header>
+
+<div class="mat-wrap">
+  <div class="mat-intro">
+    <p class="eyebrow" data-reveal="fade" data-cms="mat_eyebrow">Materials library</p>
+    <h1 data-split>The <span class="gtext">material</span> of everything</h1>
+    <p data-reveal style="--d:.4s" data-cms="mat_intro">A tactile catalogue of the surfaces, woods, stones and textiles behind every Elevé interior. Grab the book and turn its pages.</p>
+  </div>
+
+  <div class="book-row">
+    <div class="book-col">
+    <div class="book-scene" data-reveal="scale" style="--d:.25s">
+    <div class="book" id="book">
+      <div class="board"></div>
+      <div class="endpaper left"></div>
+      <div class="endpaper right"></div>
+      <div class="edge edge-l"></div>
+      <div class="edge edge-r"></div>
+      <div class="spine"></div>
+      <div class="leaves" id="leaves"></div>
+    </div>
+  </div>
+
+  <div class="bookctl">
+    <button id="prevBtn" aria-label="Previous page">‹ Prev</button>
+    <span class="pgind" id="pgind">Cover</span>
+    <button id="nextBtn" aria-label="Next page">Next ›</button>
+  </div>
+  <p class="hint">Drag a page sideways to turn it — or use the arrows.</p>
+    </div>
+    <aside class="shelf-side" data-reveal="right" style="--d:.4s">
+      <p class="shelf-lbl">Other libraries</p>
+      <div class="shelf" id="shelf"></div>
+    </aside>
+    </div>
+</div>
+
+<footer class="e-footer" style="margin-top:0">
+  <div class="ef-in" style="padding-top:2.6rem">
+    <span class="ef-word" aria-hidden="true" style="font-size:clamp(3rem,9vw,6.5rem)">MATERIAL<em>S</em></span>
+    <div class="ef-bottom">
+      <span>© <span data-e-year></span> Elevé Studio. All rights reserved.</span>
+      <span class="ef-tag">Where space becomes emotion</span>
+      <span style="display:flex;gap:1.4rem;align-items:center"><a href="index.html" class="e-link">Home</a><a href="gallery.html" class="e-link">Gallery</a><a href="builder.html" class="e-link">Builder</a></span>
+      <span class="mono" data-e-time>Lisbon —:—</span>
+    </div>
+  </div>
+</footer>
+
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<script>
+(function(){
+  "use strict";
+  var CATS = JSON.parse(JSON.stringify(window.__MATERIALS_DATA||[]));
+  var _ADD_SW="linear-gradient(135deg,#d8dce1,#c2c7cf)";
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function safeImageUrl(u){
+    u=String(u||"").trim();
+    if(!u || /[\r\n"'()\\]/.test(u)) return "";
+    if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u)) return u;
+    if(/^blob:https?:\/\//i.test(u) || /^https?:\/\/[^\s]+$/i.test(u)) return u;
+    if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(u)) return u;
+    return "";
+  }
+  function safeSwatch(v){
+    v=String(v||"").trim();
+    return /^(?:linear-gradient|radial-gradient)\([^"'<>\\]*\)$|^#[0-9a-f]{3,8}$/i.test(v)?v:_ADD_SW;
+  }
+  function materialBg(m){ var u=safeImageUrl(m&&m.img); return u?"center/cover no-repeat url('"+u+"')":safeSwatch(m&&m.sw); }
+  function _mkItem(a,catName){ return { n:(a&&a.name)||"New material", d:(a&&a.desc)||"", img:(a&&a.img)||"", sw:_ADD_SW, p:[], cat:catName||"" }; }
+  try{ var _C=window.__CMS||{}, _mc=_C.materialsCat||{}, _mm=_C.materials||{}, _md=_C.materialsDel||{}, _mcd=_C.materialsCatDel||{}, _ma=_C.materialsAdd||{}, _mb=_C.materialsBooks||[];
+    CATS.forEach(function(cat,ci){ if(_mc[ci]){ if(_mc[ci].name)cat.name=_mc[ci].name; if(_mc[ci].sub)cat.sub=_mc[ci].sub; }
+      cat.items.forEach(function(it,ii){ var o=_mm[ci+"_"+ii]; if(o){ if(o.name)it.n=o.name; if(o.desc)it.d=o.desc; if(o.img)it.img=o.img; } });
+      /* drop swatches the studio deleted in the CMS (by original index) — before appending additions */
+      cat.items=cat.items.filter(function(it,ii){ return !_md[ci+"_"+ii]; });
+      /* append swatches added in the CMS */
+      (_ma[ci]||[]).forEach(function(a){ cat.items.push(_mkItem(a,cat.name)); });
+    });
+    /* drop whole books the studio deleted */
+    CATS=CATS.filter(function(cat,ci){ return !_mcd[ci]; });
+    /* append whole new books created in the CMS */
+    _mb.forEach(function(bk){ CATS.push({ name:(bk&&bk.name)||"New book", sub:(bk&&bk.sub)||"", items:((bk&&bk.items)||[]).map(function(a){ return _mkItem(a,(bk&&bk.name)||""); }) }); });
+  }catch(e){}
+
+  var leavesEl=document.getElementById("leaves"), book=document.getElementById("book"), shelfEl=document.getElementById("shelf");
+  var active=0, leaves=[], N=0, cur=0, PW=430, BOOKW=860;
+
+  /* paper-turn sound */
+  function snd(u,vol){
+    if(window.__sfx && window.__sfx.isMuted && window.__sfx.isMuted()) return;
+    if(!u) return; try{ var a=new Audio(u); a.volume=(vol||0.56); a.play(); }catch(e){}
+  }
+  function paper(){ var B=window.__BOOK_SFX||{}; if(N>0 && cur>=N) snd(B.closed); else snd(B.turn); }
+
+  function faceHTML(f,no){
+    if(f.type==="cover") return `<div class="face cover"><span class="mark">ELEVÉ</span><div class="big">${esc(f.cat.name)}</div><div class="sub">${esc(f.cat.sub)} · ${f.cat.items.length} materials. Turn the page →</div></div>`;
+    if(f.type==="end") return `<div class="face endface"><div><p class="pno">FIN</p><h2 style="font-size:1.7rem;margin-top:.4rem">End of ${esc(CATS[active].name)}</h2><p class="desc" style="flex:none;margin-top:.6rem">Pick another library below, or take this palette to the room builder.</p><p style="margin-top:1rem"><a href="builder.html" class="endlink">OPEN THE BUILDER →</a></p></div></div>`;
+    if(f.type==="blank") return `<div class="face"></div>`;
+    var m=f.m, n=(""+no); while(n.length<2) n="0"+n;
+    var hasImg=!!safeImageUrl(m.img), props=(m.p||[]).map(p=>`<li><span>${esc(p[0])}</span><b>${esc(p[1])}</b></li>`).join("");
+    return `<div class="face"><p class="pno">MATERIAL ${n}</p><div class="swatch" style="background:${materialBg(m)};background-blend-mode:${hasImg?"normal":"multiply"}"></div><h2>${esc(m.n)}</h2><p class="cat">${esc(m.cat)}</p><p class="desc">${esc(m.d)}</p><ul class="props">${props}</ul></div>`;
+  }
+
+  function buildBook(){
+    leavesEl.innerHTML=""; leaves=[];
+    var faces=[{type:"cover",cat:CATS[active]}];
+    CATS[active].items.forEach(function(m){ faces.push({type:"mat",m:m}); });
+    faces.push({type:"end"});
+    if(faces.length%2!==0) faces.push({type:"blank"});
+    N=faces.length/2; var matNo=0;
+    for(var i=0;i<N;i++){
+      var leaf=document.createElement("div"); leaf.className="leaf";
+      var f0=faces[2*i], f1=faces[2*i+1];
+      var h0=faceHTML(f0,(f0.type==="mat")?(++matNo):0);
+      var h1=faceHTML(f1,(f1.type==="mat")?(++matNo):0).replace('class="face','class="face back');
+      leaf.innerHTML=h0+h1; leavesEl.appendChild(leaf); leaves.push(leaf);
+    }
+    cur=0; refresh();
+  }
+  function setLeaf(i,t){ leaves[i].style.transform = t?"rotateY(-180deg)":"rotateY(0deg)"; }
+  function updateZ(){ for(var i=0;i<N;i++) leaves[i].style.zIndex=(i<cur)?i:(N-i); }
+  function refresh(){ for(var i=0;i<N;i++) setLeaf(i,i<cur); updateZ(); ind(); }
+  function ind(){ document.getElementById("pgind").textContent = cur===0?CATS[active].name:(cur>=N?"End":("Spread "+cur+" / "+(N-1))); }
+  function go(n){ var pc=cur; if(n>cur&&cur<N)cur++; else if(n<cur&&cur>0)cur--; if(cur!==pc) paper(); refresh(); }
+
+  document.getElementById("nextBtn").addEventListener("click",function(){ go(cur+1); });
+  document.getElementById("prevBtn").addEventListener("click",function(){ go(cur-1); });
+  window.addEventListener("keydown",function(e){ if(e.key==="ArrowRight")go(cur+1); else if(e.key==="ArrowLeft")go(cur-1); });
+
+  /* drag to turn */
+  var dragging=false,startX=0,lastX=0,decided=false,dir=0,leafEl=null,bookScale=1;
+  function scaleNow(){ var r=book.getBoundingClientRect(); bookScale=r.width/BOOKW||1; }
+  book.addEventListener("pointerdown",function(e){
+    if(e.target.closest("a")) return;
+    dragging=true; decided=false; dir=0; leafEl=null; startX=lastX=e.clientX; scaleNow();
+    book.setPointerCapture&&book.setPointerCapture(e.pointerId);
+  });
+  window.addEventListener("pointermove",function(e){
+    if(!dragging) return; lastX=e.clientX; var dx=e.clientX-startX;
+    if(!decided){
+      if(Math.abs(dx)<6) return; decided=true;
+      if(dx<0 && cur<N){ dir=1; leafEl=leaves[cur]; }
+      else if(dx>0 && cur>0){ dir=-1; leafEl=leaves[cur-1]; }
+      else { dragging=false; return; }
+      leafEl.classList.add("drag"); leafEl.style.zIndex=N+5;
+    }
+    if(!leafEl) return;
+    var prog=Math.min(1,Math.max(0,Math.abs(dx)/(PW*bookScale)));
+    leafEl.style.transform="rotateY("+(dir>0?-180*prog:-180*(1-prog))+"deg)";
+  });
+  window.addEventListener("pointerup",function(){
+    if(!dragging){ return; } dragging=false; if(!leafEl){ return; }
+    var dx=lastX-startX, prog=Math.min(1,Math.abs(dx)/(PW*bookScale));
+    leafEl.classList.remove("drag");
+    if(prog>0.35){ if(dir>0)cur++; else cur--; paper(); }
+    refresh(); leafEl=null;
+  });
+
+  /* shelf of the other category books */
+  function renderShelf(){
+    shelfEl.innerHTML="";
+    CATS.forEach(function(c,i){
+      if(i===active) return;
+      var b=document.createElement("button"); b.className="minibook"; b.type="button";
+      b.innerHTML=`<span class="mb-name">${esc(c.name)}</span><span class="mb-count">${c.items.length} materials</span><span class="mb-open">OPEN →</span>`;
+      b.addEventListener("click",function(){ active=i; snd((window.__BOOK_SFX||{}).open); buildBook(); renderShelf(); });
+      shelfEl.appendChild(b);
+    });
+  }
+
+  buildBook(); renderShelf();
+})();
+</script>
+
+<!-- background grid -->
+<script>
+(function(){
+  var cv=document.getElementById("gridfx"); if(!cv) return;
+  var cx=cv.getContext("2d"), dpr=Math.min(2,window.devicePixelRatio||1), CELL=38, cw=0, ch=0;
+  var fine=!(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches);
+  var tx=-9999,ty=-9999,mx=-9999,my=-9999, cells={}, ripples=[];
+  function size(){ cw=document.documentElement.clientWidth; ch=document.documentElement.clientHeight; cv.width=cw*dpr; cv.height=ch*dpr; cv.style.width=cw+"px"; cv.style.height=ch+"px"; cx.setTransform(dpr,0,0,dpr,0,0); }
+  size(); addEventListener("resize",size);
+  if(fine){
+    addEventListener("mousemove",function(e){ tx=e.clientX; ty=e.clientY; });
+    addEventListener("mouseout",function(){ tx=-9999; ty=-9999; });
+    addEventListener("pointerdown",function(e){ ripples.push({x:e.clientX,y:e.clientY,t:performance.now()}); if(ripples.length>8) ripples.shift(); });
+  }
+  var HOVR=72;
+  function ax(){ return (((cw/2 - CELL/2)%CELL)+CELL)%CELL; }
+  function ay(){ return (((-(window.scrollY||window.pageYOffset||0))%CELL)+CELL)%CELL; }
+  function frame(){
+    mx+=(tx-mx)*0.16; my+=(ty-my)*0.16;
+    cx.clearRect(0,0,cw,ch);
+    var ox=ax(), oy=ay();
+    /* the grid itself (same source as highlights -> always aligned) */
+    cx.strokeStyle="rgba(23,24,27,0.05)"; cx.lineWidth=1; cx.beginPath();
+    for(var x=ox;x<=cw+1;x+=CELL){ var px=Math.round(x)+0.5; cx.moveTo(px,0); cx.lineTo(px,ch); }
+    for(var y=oy;y<=ch+1;y+=CELL){ var py=Math.round(y)+0.5; cx.moveTo(0,py); cx.lineTo(cw,py); }
+    cx.stroke();
+    if(mx>-500){
+      var g0x=Math.floor((mx-HOVR-ox)/CELL),g1x=Math.floor((mx+HOVR-ox)/CELL),g0y=Math.floor((my-HOVR-oy)/CELL),g1y=Math.floor((my+HOVR-oy)/CELL);
+      for(var gy=g0y;gy<=g1y;gy++) for(var gx=g0x;gx<=g1x;gx++){
+        var lx=gx*CELL+ox, ly=gy*CELL+oy, d=Math.hypot(lx+CELL/2-mx,ly+CELL/2-my);
+        if(d<HOVR){ var inten=1-d/HOVR, k=gx+","+gy, c=cells[k]||(cells[k]={gx:gx,gy:gy,v:0}); if(inten>c.v) c.v=inten; }
+      }
+    }
+    for(var key in cells){ var ce=cells[key]; ce.v*=0.965; if(ce.v<0.02){ delete cells[key]; continue; } var lx2=ce.gx*CELL+ox, ly2=ce.gy*CELL+oy; cx.fillStyle="rgba(23,24,27,"+(ce.v*0.09).toFixed(3)+")"; cx.fillRect(Math.round(lx2)+1,Math.round(ly2)+1,CELL-1,CELL-1); }
+    var now=performance.now(),LIFE=1400,SPEED=0.3,BAND=50;
+    for(var ri=ripples.length-1;ri>=0;ri--){ var rp=ripples[ri],age=now-rp.t; if(age>LIFE){ ripples.splice(ri,1); continue; } var rad=age*SPEED,fade=1-age/LIFE; var rx0=Math.floor((rp.x-rad-BAND-ox)/CELL),rx1=Math.floor((rp.x+rad+BAND-ox)/CELL),ry0=Math.floor((rp.y-rad-BAND-oy)/CELL),ry1=Math.floor((rp.y+rad+BAND-oy)/CELL); for(var ry=ry0;ry<=ry1;ry++) for(var rxx=rx0;rxx<=rx1;rxx++){ var lx3=rxx*CELL+ox,ly3=ry*CELL+oy,dd=Math.abs(Math.hypot(lx3+CELL/2-rp.x,ly3+CELL/2-rp.y)-rad); if(dd<BAND){ var a=(1-dd/BAND)*fade*0.18; if(a>0.004){ cx.fillStyle="rgba(23,24,27,"+a.toFixed(3)+")"; cx.fillRect(Math.round(lx3)+1,Math.round(ly3)+1,CELL-1,CELL-1); } } } }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+
+<!-- custom cursor -->
+<script>
+(function(){if(window.matchMedia&&matchMedia("(pointer:coarse)").matches)return;var d=document.getElementById("cur-dot"),r=document.getElementById("cur-ring");if(!d||!r)return;var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+function setT(el,x,y){el.style.transform="translate("+(x-el.offsetWidth/2)+"px,"+(y-el.offsetHeight/2)+"px)";}
+d.style.opacity=0;r.style.opacity=0;
+addEventListener("mousemove",function(e){mx=e.clientX;my=e.clientY;d.style.opacity=1;r.style.opacity=1;setT(d,mx,my);});
+addEventListener("mousedown",function(){r.classList.add("down");});addEventListener("mouseup",function(){r.classList.remove("down");});
+document.addEventListener("mouseover",function(e){var i=e.target.closest&&e.target.closest("a,button,.leaf,.book,[role=button],input,select");r.classList.toggle("hover",!!i);});
+(function loop(){rx+=(mx-rx)*0.2;ry+=(my-ry)*0.2;setT(r,rx,ry);requestAnimationFrame(loop);})();})();
+</script>
+
+<!-- page fade + eased scroll -->
+<script>
+(function(){var pf=document.getElementById("pfade");if(!pf)return;function show(){pf.classList.add("out");}
+if(document.readyState==="complete")requestAnimationFrame(show);else addEventListener("load",function(){requestAnimationFrame(show);});setTimeout(show,1300);
+document.addEventListener("click",function(e){var a=e.target.closest?e.target.closest("a"):null;if(!a)return;var href=a.getAttribute("href")||"";if(a.target==="_blank"||e.metaKey||e.ctrlKey||e.shiftKey)return;if(href===""||href.charAt(0)==="#")return;if(/\.html(\?[^#]*)?(#.*)?$/.test(href)){e.preventDefault();pf.classList.remove("out");setTimeout(function(){location.href=href;},760);}});})();
+(function(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+var cur=scrollY||0,target=cur,running=false,ease=0.06;
+function maxY(){return Math.max(0,(document.documentElement.scrollHeight||document.body.scrollHeight)-innerHeight);}
+function step(){cur+=(target-cur)*ease;if(Math.abs(target-cur)<0.3){cur=target;scrollTo(0,cur);running=false;return;}scrollTo(0,cur);requestAnimationFrame(step);}
+addEventListener("wheel",function(e){if(e.ctrlKey)return;var tp=(e.deltaMode===0&&Math.abs(e.deltaY)<50);ease=tp?0.22:0.08;e.preventDefault();var d=e.deltaY*(e.deltaMode===1?16:1);target=Math.max(0,Math.min(maxY(),target+d));if(!running){running=true;cur=scrollY;requestAnimationFrame(step);}},{passive:false});
+addEventListener("scroll",function(){if(!running){cur=target=scrollY;}},{passive:true});})();
+</script>
+
+<script src="sfx.js?v=6"></script>
+<div class="ui-corner ui-bl">ELEVÉ — Materials</div>
+<div class="ui-corner ui-br">· library</div>
+<script src="site.js"></script>
+<script src="chrome.js?v=20260704"></script>
+</body>
+</html>

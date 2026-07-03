@@ -1,0 +1,6 @@
+**/node_modules
+server/db.json
+server/events.log
+server/backups
+*.log
+.git

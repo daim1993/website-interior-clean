@@ -1,0 +1,104 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Book a consultation — Elevé</title><meta name="description" content="Book a free consultation with the Elevé design studio.">
+<meta property="og:title" content="Book a consultation — Elevé"><meta name="theme-color" content="#17181b">
+<link rel="icon" href="/favicon.svg"><link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<style>
+ *{box-sizing:border-box;border-radius:0!important}
+ body{margin:0;background:#edeff2;color:#17181b;font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+ main{position:relative;z-index:5;max-width:1040px;margin:0 auto;padding:5rem 1.6rem 7rem}
+ .split{display:grid;grid-template-columns:1fr 1.05fr;gap:3.4rem;align-items:start}
+ @media(max-width:860px){.split{grid-template-columns:1fr}}
+ .steps{margin:2.6rem 0 0;padding:0;list-style:none;counter-reset:st}
+ .steps li{position:relative;padding:1.15rem 0 1.15rem 3.4rem;border-top:1px solid rgba(23,24,27,.14);counter-increment:st}
+ .steps li:last-child{border-bottom:1px solid rgba(23,24,27,.14)}
+ .steps li::before{content:"0" counter(st);position:absolute;left:0;top:1.2rem;font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;color:#17181b;border:1px solid rgba(23,24,27,.4);padding:.3rem .45rem}
+ .steps b{display:block;font-family:"Playfair Display",serif;font-weight:600;font-size:1.08rem;margin-bottom:.2rem}
+ .steps p{margin:0;font-size:.88rem;color:#6b6f76;line-height:1.6}
+ .meta-line{display:flex;gap:1.8rem;flex-wrap:wrap;margin-top:2.4rem;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:#8b8f97}
+ .meta-line b{color:#17181b;font-weight:500}
+ form{background:#f6f7f9;border:1px solid rgba(23,24,27,.3);padding:2.4rem;position:relative}
+ form::before,form::after{content:"";position:absolute;width:14px;height:14px;border:0 solid rgba(23,24,27,.55)}
+ form::before{left:9px;top:9px;border-left-width:1px;border-top-width:1px}
+ form::after{right:9px;bottom:9px;border-right-width:1px;border-bottom-width:1px}
+ label{display:block;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:#8b8f97;margin:.2rem 0 .3rem}
+ .field{margin-bottom:1.4rem;position:relative}
+ .field::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:#17181b;transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.22,1,.36,1)}
+ .field:focus-within::after{transform:scaleX(1)}
+ input,textarea,select{width:100%;font:inherit;font-size:.98rem;color:#17181b;background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.25);padding:.6rem 0;outline:none;transition:border-color .3s}
+ input:focus,textarea:focus,select:focus{border-color:rgba(23,24,27,.5)}
+ input::placeholder,textarea::placeholder{color:#a7abb2}
+ .row{display:flex;gap:1.6rem}.row>div{flex:1;min-width:0}
+ @media(max-width:520px){.row{flex-direction:column;gap:0}}
+ @media(max-width:560px){form{padding:1.5rem 1.15rem}main{padding:3.2rem 1.2rem 5rem}}
+ button[type=submit]{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;padding:1rem 1.2rem;border:1px solid #17181b;background:#17181b;color:#fff;cursor:pointer;width:100%;margin-top:.6rem;transition:.3s}
+ button[type=submit]:hover{background:#000;box-shadow:0 14px 32px rgba(23,24,27,.25);transform:translateY(-2px)}
+ .status{margin-top:1rem;font-size:.85rem;min-height:1.1em}
+ .alt{margin-top:1.6rem;font-size:.85rem;color:#6b6f76;text-align:center}
+ .alt a{color:#17181b}
+</style><link rel="canonical" href="/book.html">
+</head>
+<body class="e-page">
+<a class="e-skip" href="#bookForm">Skip to form</a>
+<header class="e-hdr"><a class="e-logo" href="/index.html">ELEVÉ</a><nav><a href="/gallery.html">Gallery</a><a href="/materials.html">Materials</a><a href="/builder.html">Builder</a><a href="/pricing.html">Pricing</a></nav></header>
+<main>
+ <div class="split">
+  <div>
+   <p class="e-kicker" data-reveal="fade">Let's talk · 30 minutes, free</p>
+   <h1 class="e-h1" data-split>Book a <em>consultation</em></h1>
+   <p class="e-sub" data-reveal style="--d:.4s;margin-top:1.2rem">A quiet half-hour about your space, timeline and budget. No pitch, no pressure — just a considered first look at what your project could become.</p>
+   <ol class="steps" data-stagger="0.1">
+     <li data-reveal><b>You tell us about the space</b><p>Rooms, light, how you live or work in it — rough is fine.</p></li>
+     <li data-reveal><b>We talk through directions</b><p>Materials, budget envelopes and what's realistic in your timeline.</p></li>
+     <li data-reveal><b>You receive a short note</b><p>A written summary with first thoughts and a proposed way forward.</p></li>
+   </ol>
+   <div class="meta-line" data-reveal>
+     <span>Studio <b>Lisbon</b></span><span>Reply <b>&lt; 24 h</b></span><span>Worldwide <b>Remote OK</b></span>
+   </div>
+  </div>
+  <form id="bookForm" data-reveal="right" style="--d:.3s">
+   <div class="row"><div class="field"><label for="bName">01 — Name</label><input id="bName" required placeholder="Your name"></div><div class="field"><label for="bEmail">02 — Email</label><input id="bEmail" type="email" required placeholder="you@email.com"></div></div>
+   <div class="row"><div class="field"><label for="bDate">03 — Preferred date</label><input id="bDate" type="date" required></div><div class="field"><label for="bTime">04 — Preferred time</label><select id="bTime"><option>Morning</option><option>Afternoon</option><option>Evening</option></select></div></div>
+   <div class="field"><label for="bNote">05 — About your project (optional)</label><textarea id="bNote" rows="4" placeholder="Rooms, style, timeline, budget…"></textarea></div>
+   <button type="submit" id="bBtn">Request consultation</button>
+   <p class="status" id="bStatus" role="status" aria-live="polite"></p>
+  </form>
+ </div>
+ <p class="alt" data-reveal>Prefer email? Write to <a href="mailto:creative@sentientbyelysian.com">creative@sentientbyelysian.com</a>.</p>
+</main>
+<footer class="e-footer" style="margin-top:0">
+  <div class="ef-in" style="padding-top:2.6rem">
+    <span class="ef-word" aria-hidden="true" style="font-size:clamp(3rem,9vw,6.5rem)">LET'S TAL<em>K</em></span>
+    <div class="ef-bottom">
+      <span>© <span data-e-year></span> Elevé Studio. All rights reserved.</span>
+      <span class="ef-tag">Where space becomes emotion</span>
+      <span style="display:flex;gap:1.4rem;align-items:center"><a href="index.html" class="e-link">Home</a><a href="gallery.html" class="e-link">Gallery</a><a href="pricing.html" class="e-link">Pricing</a></span>
+      <span class="mono" data-e-time>Lisbon —:—</span>
+    </div>
+  </div>
+</footer>
+<script src="motion.js" defer></script>
+<script src="ambient.js" defer></script>
+<script src="sfx.js?v=6"></script>
+<script src="site.js"></script>
+<script src="chrome.js?v=20260704"></script>
+<script>
+(function(){
+  var base=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
+  var d=document.getElementById("bDate"); if(d){ var t=new Date(Date.now()+86400000); d.min=t.toISOString().slice(0,10); }
+  function val(id){ return (document.getElementById(id).value||"").trim(); }
+  var form=document.getElementById("bookForm");
+  form.addEventListener("submit",function(e){ e.preventDefault();
+    var btn=document.getElementById("bBtn"), st=document.getElementById("bStatus");
+    var body={ name:val("bName"), email:val("bEmail"), date:val("bDate"), time:val("bTime"), note:val("bNote") };
+    btn.disabled=true; btn.textContent="Sending…";
+    fetch(base+"/api/consult",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+      .then(function(r){return r.ok?r.json():r.json().then(function(x){throw x;});})
+      .then(function(){ form.reset(); btn.textContent="Requested ✓"; st.style.color="#17181b"; st.textContent="Thank you — we'll confirm your consultation by email shortly."; })
+      .catch(function(err){ btn.disabled=false; btn.textContent="Request consultation"; st.style.color="#c0392b"; st.textContent=(err&&err.error)||"Could not send — start the server, or email us directly."; });
+  });
+})();
+</script>
+</body></html>

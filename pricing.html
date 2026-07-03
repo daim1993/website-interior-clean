@@ -1,0 +1,110 @@
+<!doctype html><!-- Elevé v2 --><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pricing — Elevé</title><meta name="description" content="Elevé Studio plans — free room builder with cloud projects, or Pro for unlimited projects and sharing.">
+<meta property="og:title" content="Pricing — Elevé"><meta property="og:description" content="Free and Pro plans for the Elevé room builder."><meta name="theme-color" content="#17181b">
+<link rel="icon" href="/favicon.svg"><link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<style>
+ *{box-sizing:border-box;border-radius:0!important}
+ body{margin:0;background:#edeff2;color:#17181b;font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+ main{position:relative;z-index:5;max-width:960px;margin:0 auto;padding:5rem 1.6rem 7rem}
+ .head{text-align:center;margin-bottom:3.6rem}
+ .head .e-sub{margin:1.1rem auto 0}
+ .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;text-align:left;align-items:stretch}
+ @media(max-width:680px){.grid{grid-template-columns:1fr}}
+ .plan{background:#f6f7f9;border:1px solid rgba(23,24,27,.28);padding:2.2rem;position:relative;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s,border-color .35s}
+ .plan:hover{transform:translateY(-6px);box-shadow:0 26px 60px rgba(23,24,27,.14);border-color:#17181b}
+ .plan.pro{border:1px solid #17181b;background:#17181b;color:#f4f5f7}
+ .plan.pro:hover{box-shadow:0 30px 70px rgba(23,24,27,.35)}
+ .plan .p-kick{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:#8b8f97;display:flex;justify-content:space-between;align-items:center}
+ .plan .p-kick .flag{border:1px solid currentColor;padding:.28rem .55rem;color:inherit}
+ .plan.pro .p-kick{color:#9aa0a8}
+ .plan h2{font-family:"Playfair Display",serif;font-size:1.75rem;font-weight:600;margin:1rem 0 0}
+ .plan h2 em{font-style:italic;font-weight:500}
+ .price{display:flex;align-items:baseline;gap:.5rem;margin:1.2rem 0 1.6rem;border-bottom:1px solid rgba(23,24,27,.16);padding-bottom:1.4rem}
+ .plan.pro .price{border-color:rgba(244,245,247,.2)}
+ .price b{font-family:"Playfair Display",serif;font-size:3rem;font-weight:600;line-height:1}
+ .price span{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#8b8f97}
+ ul.feats{list-style:none;padding:0;margin:0 0 2rem;flex:1}
+ ul.feats li{display:flex;gap:.7rem;align-items:baseline;padding:.5rem 0;border-bottom:1px dotted rgba(23,24,27,.18);font-size:.92rem;color:#3c3e44}
+ .plan.pro ul.feats li{color:#c9ccd2;border-color:rgba(244,245,247,.16)}
+ ul.feats li::before{content:"—";font-family:"JetBrains Mono",monospace;font-size:.8rem;color:inherit;opacity:.6}
+ .plan .e-btn{justify-content:center;width:100%}
+ .plan.pro .e-btn{border-color:#f4f5f7;color:#f4f5f7}
+ .plan.pro .e-btn::before{background:#f4f5f7}
+ .plan.pro .e-btn:hover{color:#17181b}
+ .note{margin-top:2.6rem;text-align:center;font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:#8b8f97;line-height:2}
+ .assure{display:flex;justify-content:center;gap:2.4rem;flex-wrap:wrap;margin-top:3.4rem;padding-top:2rem;border-top:1px solid rgba(23,24,27,.12)}
+ .assure div{max-width:15rem;text-align:center}
+ @media(max-width:560px){.plan{padding:1.5rem 1.15rem}main{padding:3.2rem 1.2rem 5rem}.price b{font-size:2.4rem}}
+ .assure b{display:block;font-family:"Playfair Display",serif;font-style:italic;font-weight:500;font-size:1.15rem;margin-bottom:.3rem}
+ .assure p{font-size:.82rem;color:#8b8f97;margin:0;line-height:1.6}
+</style><link rel="canonical" href="/pricing.html">
+</head>
+<body class="e-page">
+<a class="e-skip" href="#plans">Skip to plans</a>
+<header class="e-hdr"><a class="e-logo" href="/index.html">ELEVÉ</a><nav><a href="/builder.html">Builder</a><a href="/gallery.html">Gallery</a><a href="/materials.html">Materials</a><a href="/book.html">Book</a></nav></header>
+<main>
+ <div class="head">
+  <p class="e-kicker" data-reveal="fade">Plans · The room builder</p>
+  <h1 class="e-h1" data-split>Start free, <em>grow</em> considered</h1>
+  <p class="e-sub" data-reveal style="--d:.4s">Every plan includes the full CAD room builder — draw plans, furnish in real millimetres, and export DXF, OBJ and PDF.</p>
+ </div>
+ <div class="grid" id="plans" data-stagger="0.12"></div>
+ <p class="note" id="note" data-reveal>Billing runs through Stripe once configured — until then, Pro is enabled manually per account.</p>
+ <div class="assure" data-reveal>
+   <div><b>No lock-in</b><p>Your projects export to open formats. Leave any time, take everything.</p></div>
+   <div><b>Quiet by design</b><p>No ads, no trackers, privacy-first analytics only after consent.</p></div>
+   <div><b>Made by the studio</b><p>The same eye behind Elevé interiors shapes every pixel of the tool.</p></div>
+ </div>
+</main>
+<footer class="e-footer" style="margin-top:0">
+  <div class="ef-in" style="padding-top:2.6rem">
+    <span class="ef-word" aria-hidden="true" style="font-size:clamp(3rem,9vw,6.5rem)">PRICIN<em>G</em></span>
+    <div class="ef-bottom">
+      <span>© <span data-e-year></span> Elevé Studio. All rights reserved.</span>
+      <span class="ef-tag">Where space becomes emotion</span>
+      <span style="display:flex;gap:1.4rem;align-items:center"><a href="index.html" class="e-link">Home</a><a href="privacy.html" class="e-link">Privacy</a><a href="terms.html" class="e-link">Terms</a></span>
+      <span class="mono" data-e-time>Lisbon —:—</span>
+    </div>
+  </div>
+</footer>
+<script src="dialog.js"></script>
+<script src="motion.js" defer></script>
+<script src="ambient.js" defer></script>
+<script src="sfx.js?v=6"></script>
+<script src="site.js"></script>
+<script src="chrome.js?v=20260704"></script>
+<script>
+(function(){
+  var base=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
+  var wrap=document.getElementById("plans");
+  var fallback=[{id:"free",name:"Studio Free",price:0,features:["5 cloud projects","DXF / OBJ / PDF export","Version history (30)","Crash recovery"]},{id:"pro",name:"Studio Pro",price:24,features:["Unlimited projects","Shareable read-only links","Priority render","Team seats (soon)"]}];
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function lastWordEm(s){ s=String(s==null?"":s); var m=s.match(/^(.*\s)(\S+)$/); return m?esc(m[1])+"<em>"+esc(m[2])+"</em>":esc(s); }
+  function render(plans){ wrap.innerHTML=""; plans.forEach(function(p,i){
+    var price=Number(p.price)||0, pro=price>0;
+    var c=document.createElement("div"); c.className="plan"+(pro?" pro":""); c.setAttribute("data-reveal","");
+    c.style.setProperty("--d",(i*0.12)+"s");
+    var nm=lastWordEm(p.name);
+    c.innerHTML='<div class="p-kick"><span>0'+(i+1)+' — '+(pro?"For studios":"For everyone")+'</span>'+(pro?'<span class="flag">Most considered</span>':'')+'</div>'+
+      '<h2>'+nm+'</h2>'+
+      '<div class="price"><b>'+(pro?("€"+price):"Free")+'</b><span>'+(pro?"per month":"forever")+'</span></div>'+
+      '<ul class="feats">'+(p.features||[]).map(function(f){return "<li>"+esc(f)+"</li>";}).join("")+'</ul>';
+    var a=document.createElement(pro? "button":"a"); a.className="e-btn"; a.innerHTML=(pro?"Upgrade to Pro":"Start free")+' <span class="e-arr">→</span>';
+    if(pro){ a.addEventListener("click",function(){ upgrade(p.id); }); } else { a.href="/builder.html"; }
+    c.appendChild(a); wrap.appendChild(c);
+    if(window.IntersectionObserver){ requestAnimationFrame(function(){ c.classList.add("is-in"); }); } });
+  }
+  function upgrade(plan){ var tok=null; try{tok=localStorage.getItem("eleve_token");}catch(e){}
+    if(!tok){ eleveUI.alert("Create an account first — open the Room Builder and use Cloud save, then upgrade here.",{title:"Account needed",ok:"Open the builder"}).then(function(){ location.href="/builder.html"; }); return; }
+    fetch(base+"/api/billing/checkout",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({plan:plan})})
+      .then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});})
+      .then(function(x){ if(x.j&&x.j.url){ location.href=x.j.url; return; } eleveUI.alert(x.j.error||"Checkout is not available yet.",{title:"Billing"}); })
+      .catch(function(){ eleveUI.alert("Billing endpoint unavailable — is the server running?",{title:"Billing"}); }); }
+  try{ var qs=new URLSearchParams(location.search); if(qs.get("checkout")==="success") eleveUI.alert("Stripe received your checkout. Your Pro access activates as soon as the webhook confirms the subscription.",{title:"Checkout received"}); else if(qs.get("checkout")==="cancelled") eleveUI.alert("Checkout was cancelled. Your account was not changed.",{title:"Checkout cancelled"}); }catch(e){}
+  fetch(base+"/api/plans").then(function(r){return r.ok?r.json():null;}).then(function(j){ render(j&&j.plans?j.plans:fallback); }).catch(function(){ render(fallback); });
+})();
+</script>
+</body></html>

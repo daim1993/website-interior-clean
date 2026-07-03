@@ -1,0 +1,37 @@
+# Free-tier deployment: web service on Render (free plan) + persistence in a
+# free Neon Postgres database (paste its connection string into DATABASE_URL
+# when the blueprint asks). Local dev is unchanged: without DATABASE_URL the
+# server keeps using server/db.json.
+# Note: free instances sleep after 15 min idle — a free uptime pinger
+# (e.g. UptimeRobot hitting /healthz every 10 min) keeps the site warm.
+services:
+  - type: web
+    name: eleve
+    runtime: node
+    plan: free
+    region: virginia   # same region as the Neon database
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: BACKUP_KEEP
+        value: "30"

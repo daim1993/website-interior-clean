@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Not found · Elevé</title><link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<style>
+ *{box-sizing:border-box;border-radius:0!important}
+ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#edeff2;color:#17181b;font-family:"Inter",system-ui,sans-serif;text-align:center;overflow:hidden}
+ .wrap{position:relative;z-index:5;padding:2rem}
+ .kick{font-family:"JetBrains Mono",monospace;letter-spacing:.34em;text-transform:uppercase;font-size:.64rem;color:#8b8f97;display:inline-flex;align-items:center;gap:.9rem}
+ .kick::before,.kick::after{content:"";width:2.2rem;height:1px;background:#17181b;opacity:.4}
+ h1{font-family:"Playfair Display",serif;font-size:clamp(6rem,24vw,13rem);line-height:.95;margin:.5rem 0 0;font-weight:600;letter-spacing:.02em}
+ h1 em{font-style:italic;font-weight:500}
+ h1 span{display:inline-block;opacity:0;transform:translateY(40%) rotateX(-40deg);animation:up .9s cubic-bezier(.22,1,.36,1) forwards}
+ h1 span:nth-child(2){animation-delay:.12s}h1 span:nth-child(3){animation-delay:.24s}
+ @keyframes up{to{opacity:1;transform:none}}
+ .lead{color:#3c3e44;margin:1.2rem auto 0;max-width:26rem;line-height:1.7;opacity:0;animation:fade .8s ease .5s forwards}
+ .lead em{font-family:"Playfair Display",serif;font-style:italic}
+ .links{display:flex;gap:1.6rem;justify-content:center;flex-wrap:wrap;margin-top:2.2rem;opacity:0;animation:fade .8s ease .7s forwards}
+ @keyframes fade{to{opacity:1}}
+ .mono-foot{position:fixed;left:0;right:0;bottom:1.2rem;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:#8b8f97;z-index:5}
+ @media(prefers-reduced-motion:reduce){h1 span,.lead,.links{opacity:1!important;transform:none!important;animation:none!important}}
+</style></head>
+<body data-no-grain>
+<div class="wrap">
+  <p class="kick">Elevé — page not found</p>
+  <h1 aria-label="404"><span>4</span><span><em>0</em></span><span>4</span></h1>
+  <p class="lead">This room doesn't exist — or it was quietly <em>redesigned</em> out of the plan.</p>
+  <div class="links">
+    <a class="e-link" href="/index.html">Return home</a>
+    <a class="e-link" href="/gallery.html">The gallery</a>
+    <a class="e-link" href="/builder.html">Room builder</a>
+  </div>
+</div>
+<p class="mono-foot">ERR · 404 — Where space becomes emotion</p>
+<script src="ambient.js" defer></script>
+</body></html>

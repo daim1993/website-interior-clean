@@ -1,0 +1,301 @@
+/* Elevé — elevation layer v2 (design-language system)
+   Shared: tokens, type, focus/a11y, grain, marquee, editorial buttons,
+   reveal engine styles, big footer, micro-interactions, motion, print. */
+
+:root{
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --e-ink:#17181b; --e-ink-soft:#3c3e44; --e-muted:#8b8f97;
+  --e-bg1:#edeff2; --e-bg2:#f4f5f7; --e-bg3:#e8eaee;
+  --e-paper:#f6f7f9; --e-line:#d7d9de;
+}
+
+/* ---- Typography refinement ---- */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; scroll-padding-top:5rem; overflow-x:hidden; max-width:100%; }
+body{ overflow-x:hidden; max-width:100%; }
+*{ text-rendering:optimizeLegibility; min-width:0; }
+h1,h2,h3,.serif{ text-wrap:balance; }
+p,.lead,.desc,li,td,th{ text-wrap:pretty; overflow-wrap:break-word; }
+img,svg,canvas,video{ max-width:100%; }
+.serif-i{ font-family:"Playfair Display",Georgia,serif; font-style:italic; font-weight:500; }
+
+/* ---- Accessible keyboard focus (skill checklist: visible focus states) ---- */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+textarea:focus-visible,[role=button]:focus-visible,[tabindex]:focus-visible,
+.pill:focus-visible,.chip:focus-visible,.minibook:focus-visible{
+  outline:2px solid var(--e-ink);
+  outline-offset:3px;
+}
+:focus:not(:focus-visible){ outline:none; }
+
+/* ---- Monochrome text selection ---- */
+::selection{ background:rgba(23,24,27,.88); color:#fff; }
+
+/* ---- Thin editorial scrollbar (brand: squared corners, ink, hairline) ----
+   Firefox only: scrollbar-width/color. Scoped with @supports so Chromium/Safari
+   never see them — if they did, they'd ignore ::-webkit-scrollbar and paint a
+   rounded default thumb, breaking the squared-corners rule. */
+@supports (-moz-appearance:none){
+  html{ scrollbar-width:thin; scrollbar-color:rgba(23,24,27,.45) transparent; }
+}
+/* Chromium + Safari: full control — squared ink thumb on a hairline rail */
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; border-left:1px solid rgba(23,24,27,.08); }
+::-webkit-scrollbar-track:horizontal{ border-left:none; border-top:1px solid rgba(23,24,27,.08); }
+::-webkit-scrollbar-thumb{ background:rgba(23,24,27,.3); border:3px solid var(--e-bg1); border-radius:0; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(23,24,27,.55); }
+::-webkit-scrollbar-thumb:active{ background:var(--e-ink); }
+::-webkit-scrollbar-corner{ background:transparent; }
+
+/* ---- Film grain (signature texture, extremely subtle) ---- */
+.e-grain{
+  position:fixed; inset:-50%; width:200%; height:200%;
+  z-index:900; pointer-events:none; opacity:.05; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:e-grain-shift 1.1s steps(3) infinite;
+}
+@keyframes e-grain-shift{
+  0%{ transform:translate(0,0) } 33%{ transform:translate(-1.5%,1%) }
+  66%{ transform:translate(1%,-1.5%) } 100%{ transform:translate(0,0) }
+}
+@media(prefers-reduced-motion:reduce){ .e-grain{ animation:none; } }
+
+/* ---- Consistent, smooth micro-interactions (150–300ms) ---- */
+a,button,.pill,.chip,.btn,.cbtn,.minibook,.file-lbl,[role=button]{
+  transition:color .22s var(--ease-out), background-color .22s var(--ease-out),
+             border-color .22s var(--ease-out), transform .22s var(--ease-out),
+             box-shadow .22s var(--ease-out), opacity .22s var(--ease-out);
+}
+
+/* ---- Editorial nav underline on hover ---- */
+header nav a{ position:relative; }
+header nav a::after{
+  content:""; position:absolute; left:0; right:100%; bottom:-4px;
+  height:1px; background:currentColor; opacity:.8;
+  transition:right .32s var(--ease-out);
+}
+header nav a:hover::after{ right:0; }
+
+/* ---- Editorial button system ---- */
+.e-btn{
+  display:inline-flex; align-items:center; gap:.6rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.72rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--e-ink); text-decoration:none; cursor:pointer;
+  border:1px solid var(--e-ink); background:transparent; padding:.85rem 1.5rem;
+  position:relative; isolation:isolate; overflow:hidden;
+}
+.e-btn::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background:var(--e-ink); transform:scaleY(0); transform-origin:bottom;
+  transition:transform .3s var(--ease-out);
+}
+.e-btn:hover{ color:#fff; }
+.e-btn:hover::before{ transform:scaleY(1); }
+.e-btn .e-arr{ transition:transform .3s var(--ease-out); }
+.e-btn:hover .e-arr{ transform:translateX(4px); }
+.e-btn.solid{ background:var(--e-ink); color:#fff; }
+.e-btn.solid::before{ background:#000; }
+.e-btn.solid:hover{ box-shadow:0 14px 34px rgba(23,24,27,.28); transform:translateY(-2px); }
+
+/* mono text link with sliding underline */
+.e-link{
+  display:inline-flex; align-items:baseline; gap:.45rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--e-ink); text-decoration:none; position:relative; cursor:pointer;
+}
+.e-link::after{
+  content:""; position:absolute; left:0; right:0; bottom:-3px; height:1px;
+  background:currentColor; transform:scaleX(1); transform-origin:left;
+  transition:transform .3s var(--ease-out);
+}
+.e-link:hover::after{ transform:scaleX(0); transform-origin:right; }
+
+/* ---- Eyebrow with hairline rule ---- */
+.e-eyebrow{
+  display:flex; align-items:center; flex-wrap:wrap; gap:.5rem .9rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.66rem; letter-spacing:.3em; text-transform:uppercase; color:var(--e-muted);
+  line-height:1.8;
+}
+.e-eyebrow::before{ content:""; width:2.6rem; height:1px; background:var(--e-ink); opacity:.55; }
+.e-eyebrow .e-no{ margin-left:auto; color:var(--e-ink); opacity:.55; letter-spacing:.14em; }
+
+/* ---- Blueprint corner ticks (technical signature) ---- */
+.e-ticks{ position:relative; }
+.e-ticks::before,.e-ticks::after{
+  content:""; position:absolute; width:14px; height:14px; pointer-events:none;
+  border:0 solid rgba(23,24,27,.55); transition:border-color .3s var(--ease-out);
+  z-index:4;
+}
+.e-ticks::before{ left:9px; top:9px; border-left-width:1px; border-top-width:1px; }
+.e-ticks::after{ right:9px; bottom:9px; border-right-width:1px; border-bottom-width:1px; }
+.e-ticks:hover::before,.e-ticks:hover::after{ border-color:var(--e-ink); }
+
+/* ---- Reveal engine (motion.js drives .is-in) ---- */
+[data-reveal]{ opacity:0; transform:translateY(30px);
+  transition:opacity .9s var(--ease-out), transform .9s var(--ease-out);
+  transition-delay:var(--d,0s); will-change:opacity,transform; }
+[data-reveal].is-in{ opacity:1; transform:none; }
+[data-reveal="fade"]{ transform:none; }
+[data-reveal="left"]{ transform:translateX(-34px); }
+[data-reveal="right"]{ transform:translateX(34px); }
+[data-reveal="scale"]{ transform:scale(.94) translateY(16px); }
+[data-reveal].is-in{ transform:none; }
+
+/* split-line headline animation (motion.js wraps words)
+   Generous paint padding (cancelled by negative margins) so italic serif
+   ascenders, descenders and overhangs are never clipped by the mask. */
+.e-w{ display:inline-block; overflow:hidden; vertical-align:bottom;
+  padding:.18em .14em .28em; margin:-.18em -.14em -.28em; }
+.e-w>span{ display:inline-block; transform:translateY(130%) rotate(1.2deg); opacity:0;
+  transition:transform .95s var(--ease-out), opacity .6s ease; transition-delay:var(--d,0s); will-change:transform; }
+[data-split].is-in .e-w>span{ transform:none; opacity:1; }
+
+/* hairline that draws itself */
+.e-rule{ height:1px; background:var(--e-ink); opacity:.35; transform:scaleX(0); transform-origin:left;
+  transition:transform 1.1s var(--ease-out) .15s; }
+.e-rule.is-in,[data-reveal].is-in .e-rule{ transform:scaleX(1); }
+
+/* fail-safe: once the page has settled, nothing may remain hidden —
+   snaps any stalled reveal/split to its final visible state instantly */
+html.e-settled [data-reveal],
+html.e-settled .e-w>span{
+  opacity:1 !important; transform:none !important; transition-duration:.01s !important;
+}
+html.e-settled .e-rule{ transform:scaleX(1); }
+
+/* ---- Marquee strip ---- */
+.e-marquee{
+  overflow:hidden; overflow-x:clip; white-space:nowrap; position:relative;
+  max-width:100vw; contain:paint;
+  border-top:1px solid rgba(23,24,27,.14); border-bottom:1px solid rgba(23,24,27,.14);
+  padding:1.05rem 0; user-select:none;
+}
+.e-marquee-track{ display:inline-flex; align-items:center; gap:3.2rem; padding-right:3.2rem;
+  animation:e-marquee 46s linear infinite; will-change:transform; }
+.e-marquee:hover .e-marquee-track{ animation-play-state:paused; }
+.e-marquee .mi{ display:inline-flex; align-items:center; gap:3.2rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.72rem;
+  letter-spacing:.34em; text-transform:uppercase; color:var(--e-ink-soft); }
+.e-marquee .mi em{ font-family:"Playfair Display",serif; font-style:italic; font-size:1.02rem;
+  letter-spacing:.06em; text-transform:none; color:var(--e-ink); }
+.e-marquee .mi::after{ content:""; width:7px; height:7px; border:1px solid var(--e-ink); opacity:.5;
+  display:inline-block; transform:rotate(45deg); }
+@keyframes e-marquee{ to{ transform:translateX(-50%); } }
+@media(prefers-reduced-motion:reduce){ .e-marquee-track{ animation:none; } }
+
+/* ---- Editorial footer ---- */
+.e-footer{ position:relative; z-index:10; margin-top:6rem;
+  border-top:1px solid rgba(23,24,27,.16); background:transparent; color:var(--e-ink); }
+.e-footer .ef-in{ max-width:72rem; margin:0 auto; padding:3.6rem 1.5rem 2rem; }
+.e-footer .ef-word{
+  font-family:"Playfair Display",serif; font-weight:600; line-height:1.04;
+  font-size:clamp(3.2rem,13vw,10.5rem); letter-spacing:.02em;
+  color:transparent; -webkit-text-stroke:1px rgba(23,24,27,.6);
+  display:block; margin:0 0 2.4rem; padding:.05em .06em 0 .02em; user-select:none;
+  max-width:100%; overflow:visible; word-break:keep-all;
+}
+.e-footer .ef-word em{ font-style:italic; -webkit-text-stroke:0; color:var(--e-ink); font-weight:500; }
+.e-footer .ef-grid{ display:grid; gap:2.2rem; grid-template-columns:1.3fr 1fr 1fr 1fr;
+  padding:2.2rem 0; border-top:1px solid rgba(23,24,27,.12); }
+@media(max-width:860px){ .e-footer .ef-grid{ grid-template-columns:1fr 1fr; } }
+@media(max-width:480px){ .e-footer .ef-grid{ grid-template-columns:1fr; } }
+.e-footer .ef-col h4{
+  font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.62rem; font-weight:500;
+  letter-spacing:.3em; text-transform:uppercase; color:var(--e-muted); margin:0 0 1.1rem;
+}
+.e-footer .ef-col a{ display:block; color:var(--e-ink-soft); text-decoration:none;
+  font-size:.9rem; padding:.28rem 0; width:fit-content; position:relative; }
+.e-footer .ef-col a::after{ content:""; position:absolute; left:0; right:100%; bottom:2px; height:1px;
+  background:currentColor; transition:right .3s var(--ease-out); }
+.e-footer .ef-col a:hover{ color:var(--e-ink); }
+.e-footer .ef-col a:hover::after{ right:0; }
+.e-footer .ef-desc{ color:var(--e-ink-soft); font-size:.92rem; line-height:1.7; max-width:24rem; }
+.e-footer .ef-bottom{ display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center;
+  border-top:1px solid rgba(23,24,27,.12); padding-top:1.4rem; margin-top:.4rem;
+  font-size:.78rem; color:var(--e-muted); }
+.e-footer .ef-bottom .mono{ font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.66rem; letter-spacing:.18em; text-transform:uppercase; }
+.e-footer .ef-tag{ font-family:"Playfair Display",serif; font-style:italic; color:var(--e-ink); font-size:.95rem; }
+/* newsletter (chrome.js appends .nl-form into footer) */
+.e-footer .nl-form{ justify-content:flex-start !important; max-width:72rem; margin:0 auto !important; padding:0 1.5rem 1.8rem; }
+.e-footer .nl-form input{ border:none !important; border-bottom:1px solid var(--e-ink) !important;
+  background:transparent !important; padding:.55rem 0 !important; font-size:.9rem !important; }
+.e-footer .nl-form button{ border:1px solid var(--e-ink) !important; }
+.e-footer .nl-form button:hover{ background:var(--e-ink) !important; color:#fff !important; }
+
+/* ---- Simple-page scaffold (pricing / book / legal / 404) ---- */
+.e-page header.e-hdr{
+  position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+  gap:.8rem; flex-wrap:wrap; padding:1.05rem 1.5rem;
+  background:color-mix(in srgb, var(--e-bg1) 72%, transparent);
+  -webkit-backdrop-filter:blur(18px) saturate(160%); backdrop-filter:blur(18px) saturate(160%);
+  border-bottom:1px solid rgba(23,24,27,.1);
+}
+@supports not (background:color-mix(in srgb, red 50%, blue)){ .e-page header.e-hdr{ background:rgba(237,239,242,.82); } }
+.e-page .e-logo{ font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.78rem; font-weight:500;
+  letter-spacing:.3em; color:var(--e-ink); text-decoration:none; border:1px solid var(--e-ink); padding:.42rem .65rem; line-height:1; }
+.e-page header.e-hdr nav{ display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap; }
+.e-page header.e-hdr nav a{ color:var(--e-ink-soft); text-decoration:none; font-size:.72rem;
+  letter-spacing:.16em; text-transform:uppercase; }
+.e-page header.e-hdr nav a:hover,.e-page header.e-hdr nav a[aria-current]{ color:var(--e-ink); }
+.e-kicker{ font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.66rem; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--e-muted); }
+.e-h1{ font-family:"Playfair Display",serif; font-weight:600; line-height:1.12;
+  font-size:clamp(2.4rem,6.6vw,4.2rem); margin:.7rem 0 0; color:var(--e-ink);
+  overflow-wrap:break-word; }
+.e-h1 em{ font-style:italic; font-weight:500; padding-right:.04em; }
+.e-sub{ color:var(--e-ink-soft); max-width:38rem; line-height:1.7; }
+
+/* ---- Comfortable touch targets on coarse pointers ---- */
+@media (pointer:coarse){
+  a,button,.pill,.chip,.btn,.e-btn,input,select,textarea{ min-height:44px; }
+  #eleve-chrome{ left:1rem; right:1rem; justify-content:flex-end; }
+  #eleve-chrome a{ max-width:100%; text-align:center; }
+}
+
+@media(max-width:640px){
+  .e-page header.e-hdr{ gap:.75rem; padding:.85rem 1rem; }
+  .e-page .e-logo{ letter-spacing:.22em; }
+  .e-page header.e-hdr nav{ gap:.85rem 1rem; }
+  .e-page header.e-hdr nav a{ font-size:.68rem; letter-spacing:.12em; }
+  .e-footer .ef-in{ padding-inline:1rem; }
+  .e-footer .ef-bottom{ align-items:flex-start; flex-direction:column; }
+  .e-footer .ef-word{ line-height:.92; overflow-wrap:anywhere; }
+  .e-footer .nl-form{ padding-inline:1rem; }
+  .e-footer .nl-form input,.e-footer .nl-form button{ width:100%; min-width:0 !important; }
+  #orbs{ display:none !important; }
+  .contact-grid{ grid-template-columns:minmax(0,1fr) !important; max-width:100%; }
+  .contact-grid > *{ max-width:100%; min-width:0 !important; }
+  .contact-grid .info,.contact-grid form{ padding:1.35rem !important; }
+}
+
+/* ---- Skip link ---- */
+.e-skip{ position:fixed; left:1rem; top:-4rem; z-index:2000; background:var(--e-ink); color:#fff;
+  font:500 .78rem/1 "Inter",sans-serif; letter-spacing:.08em; padding:.8rem 1.1rem; text-decoration:none;
+  transition:top .25s var(--ease-out); }
+.e-skip:focus{ top:1rem; }
+
+/* ---- shared floating UI (sound toggle, book CTA, consent) refinements ---- */
+#sfxBtn{ transition:opacity .25s, transform .25s; }
+#sfxBtn:hover{ transform:translateY(-2px); }
+#eleve-chrome a{ transition:transform .25s var(--ease-out), box-shadow .25s var(--ease-out) !important; }
+#eleve-chrome a:hover{ transform:translateY(-2px); box-shadow:0 12px 28px rgba(23,24,27,.3); }
+
+/* ---- Respect reduced motion globally (skill checklist) ---- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+  [data-reveal],.e-w>span{ opacity:1 !important; transform:none !important; }
+  .e-rule{ transform:scaleX(1); }
+}
+
+/* ---- Clean print of plans/documents ---- */
+@media print{
+  #gridfx,#pfade,#orbs,#particles,#cur-dot,#cur-ring,#sfxBtn,.ui-corner,.e-grain,#eleve-chrome{ display:none !important; }
+  body{ background:#fff !important; }
+}

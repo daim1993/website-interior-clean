@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elevé · Admin</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<style>
+ body{margin:0;background:#eceef1;color:#17181b;font-family:"Inter",system-ui,sans-serif;overflow-x:hidden}
+ .bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:1rem 1.4rem;border-bottom:1px solid #17181b;background:#f6f7f9}
+ .bar h1{font-size:.9rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;border:1px solid #17181b;padding:.4rem .6rem;margin-right:auto}
+ .btn{font:inherit;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .8rem;border:1px solid #17181b;background:transparent;color:#17181b;cursor:pointer}
+ .btn:hover{background:#17181b;color:#fff}
+ main{max-width:1000px;margin:0 auto;padding:2rem 1.4rem 5rem}
+ .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+ @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+ .kpi{background:#f6f7f9;border:1px solid #17181b;padding:1.2rem}
+ .kpi .n{font-family:"Playfair Display",serif;font-size:2rem;font-weight:600}
+ .kpi .l{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#6b6f76;margin-top:.3rem}
+ h2{font-size:1rem;margin:2rem 0 .6rem;letter-spacing:.02em}
+ #dash{overflow-x:auto}
+ table{width:100%;min-width:720px;border-collapse:collapse;background:#fff;border:1px solid #d7d9de;font-size:.85rem}
+ th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid #eef0f3;vertical-align:top;overflow-wrap:anywhere}
+ th{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:#6b6f76}
+ .login{max-width:340px;margin:5rem auto;background:#f6f7f9;border:1px solid #17181b;padding:1.6rem}
+ .login input{width:100%;box-sizing:border-box;padding:.6rem;border:1px solid #d7d9de;margin:.5rem 0 1rem;font:inherit}
+ .muted{color:#8b8f97}
+ @media(max-width:640px){.bar{padding:.85rem 1rem}.bar h1{width:100%;margin-right:0}.btn{min-height:44px;flex:1}main{padding:1.4rem 1rem 4rem}.login{margin:3rem auto}.kpis{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="bar"><h1>Elevé · Admin</h1><a class="btn" href="/index.html">View site ↗</a><button class="btn" id="refresh">Refresh</button><button class="btn" id="logout">Log out</button></div>
+<main id="app"><div class="login" id="login"><p style="font-family:Playfair Display,serif;font-size:1.3rem;margin:0 0 .4rem">Admin sign in</p><p class="muted" style="font-size:.82rem;margin:0 0 1rem">Use the admin password (CMS publish password).</p><input id="pw" type="password" placeholder="Admin password"><button class="btn" id="go" style="width:100%">Sign in</button><p id="err" style="color:#c0392b;font-size:.8rem;margin-top:.6rem"></p></div><div id="dash" style="display:none"></div></main>
+<script src="site.js"></script>
+<script>
+(function(){
+  var base=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
+  var TK="eleve_admin_token";
+  function tok(){ try{return localStorage.getItem(TK);}catch(e){return null;} }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+  function when(t){ return new Date(t).toLocaleString(); }
+  function show(el){ document.getElementById("login").style.display=el==="dash"?"none":"block"; document.getElementById("dash").style.display=el==="dash"?"block":"none"; }
+  function load(){
+    var t=tok(); if(!t){ show("login"); return; }
+    Promise.all([
+      fetch(base+"/api/admin/inbox",{headers:{Authorization:"Bearer "+t}}),
+      fetch(base+"/api/analytics/summary",{headers:{Authorization:"Bearer "+t}})
+    ]).then(function(rs){ if(rs[0].status===401||rs[0].status===403){ localStorage.removeItem(TK); show("login"); throw 0; } return Promise.all([rs[0].json(), rs[1].ok?rs[1].json():{by:{},total:0}]); })
+      .then(function(d){ render(d[0], d[1]); show("dash"); })
+      .catch(function(){});
+  }
+  function render(inbox, an){
+    var msgs=inbox.messages||[], cons=inbox.consults||[], subs=inbox.subscribers||[];
+    var views=0; var top=[]; if(an&&an.by){ Object.keys(an.by).forEach(function(k){ if(/^pageview/.test(k)) views+=an.by[k]; top.push([k,an.by[k]]); }); top.sort(function(a,b){return b[1]-a[1];}); }
+    var h='<div class="kpis">'+
+      kpi(views||(an&&an.total)||0,"Page views")+kpi(msgs.length,"Enquiries")+kpi(cons.length,"Consultations")+kpi(subs.length,"Subscribers")+'</div>';
+    h+='<h2>Enquiries</h2>'+tbl(["When","Name","Email","Message"], msgs.map(function(m){return [when(m.t),esc(m.name),esc(m.email),esc(m.message)];}));
+    h+='<h2>Consultation bookings</h2>'+tbl(["When","Name","Email","Date","Time","Note"], cons.map(function(c){return [when(c.t),esc(c.name),esc(c.email),esc(c.date),esc(c.time),esc(c.note)];}));
+    h+='<h2>Subscribers</h2>'+tbl(["When","Email"], subs.map(function(s){return [when(s.t),esc(s.email)];}));
+    h+='<h2>Top pages</h2>'+tbl(["Event · Page","Count"], top.slice(0,20).map(function(r){return [esc(r[0]),r[1]];}));
+    document.getElementById("dash").innerHTML=h;
+  }
+  function kpi(n,l){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+  function tbl(cols,rows){ if(!rows.length) return '<p class="muted" style="font-size:.85rem">None yet.</p>'; return '<table><thead><tr>'+cols.map(function(c){return "<th>"+c+"</th>";}).join("")+'</tr></thead><tbody>'+rows.map(function(r){return "<tr>"+r.map(function(c){return "<td>"+c+"</td>";}).join("")+"</tr>";}).join("")+'</tbody></table>'; }
+  document.getElementById("go").addEventListener("click",function(){ var pw=document.getElementById("pw").value; 
+    fetch(base+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})})
+      .then(function(r){return r.ok?r.json():Promise.reject();}).then(function(j){ localStorage.setItem(TK,j.token); load(); })
+      .catch(function(){ document.getElementById("err").textContent="Wrong password."; }); });
+  document.getElementById("pw").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("go").click(); });
+  document.getElementById("refresh").addEventListener("click",load);
+  document.getElementById("logout").addEventListener("click",function(){ localStorage.removeItem(TK); show("login"); });
+  load();
+})();
+</script>
+</body></html>

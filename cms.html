@@ -1,0 +1,1765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elevé · Content Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;border-radius:0!important;margin:0;padding:0}
+  :root{--ink:#17181b;--soft:#6b6f76;--muted:#8b8f97;--line:#d7d9de;--bg:#edeff2;--card:#f6f7f9}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .mono{font-family:"JetBrains Mono",monospace}
+
+  /* ---- header (same as the client portal) ---- */
+  .bar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.95rem 1.4rem;
+    background:rgba(237,239,242,.85);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--ink)}
+  .bar .logo{font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;letter-spacing:.3em;color:var(--ink);text-decoration:none;border:1px solid var(--ink);padding:.42rem .65rem;line-height:1}
+  .bar .sect{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+  .bar .right{margin-left:auto;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;font-family:"JetBrains Mono",monospace;font-size:.62rem;font-weight:500;line-height:1;letter-spacing:.14em;text-transform:uppercase;padding:.55rem .85rem;height:34px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;transition:.2s;text-decoration:none}
+  .btn:hover{background:var(--ink);color:#fff}
+  .btn.solid{background:var(--ink);color:#fff}.btn.solid:hover{background:#000;box-shadow:0 8px 18px rgba(23,24,27,.22)}
+  .save{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);opacity:0;transition:.25s}
+  .save.on{opacity:1}
+
+  /* ---- staff gate: the CMS renders nothing until a staff sign-in succeeds ---- */
+  body:not(.authed) .bar,body:not(.authed) .layout{display:none}
+  #cmsGate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:1.2rem;background:linear-gradient(135deg,#edeff2,#f4f5f7 45%,#e8eaee)}
+  #cmsGate[hidden]{display:none!important}
+  .cg-card{position:relative;width:min(400px,94vw);background:var(--card);border:1px solid var(--ink);box-shadow:12px 12px 0 rgba(23,24,27,.12);padding:2.1rem 1.9rem}
+  .cg-card::before,.cg-card::after{content:"";position:absolute;width:13px;height:13px;border:0 solid rgba(23,24,27,.6)}
+  .cg-card::before{left:8px;top:8px;border-left-width:1px;border-top-width:1px}
+  .cg-card::after{right:8px;bottom:8px;border-right-width:1px;border-bottom-width:1px}
+  .cg-card .kick{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin:0 0 .7rem}
+  .cg-card h1{font-family:"Playfair Display",serif;font-size:1.9rem;font-weight:600;line-height:1.15;margin:0 0 .4rem}
+  .cg-card h1 em{font-style:italic;font-weight:500}
+  .cg-card .sub{font-size:.85rem;color:var(--soft);line-height:1.6;margin:0 0 1.4rem}
+  .cg-card input{width:100%;font:inherit;font-size:.96rem;color:var(--ink);background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.3);padding:.55rem 0;outline:none;margin-bottom:1.2rem}
+  .cg-card input:focus{border-bottom-color:var(--ink)}
+  .cg-err{color:#8a2b2b;font-size:.8rem;min-height:1.2em;margin:.6rem 0 0}
+  /* ---- shell (mirrors the portal's workspace grid) ---- */
+  .layout{display:grid;grid-template-columns:15.5rem 1fr;gap:0;align-items:start;max-width:96rem;margin:0 auto;position:relative;z-index:5}
+  @media(max-width:760px){.layout{grid-template-columns:1fr}}
+  .side{position:sticky;top:60px;align-self:start;border-right:1px solid rgba(23,24,27,.6);min-height:calc(100vh - 60px);padding:1.6rem 0;z-index:5}
+  @media(max-width:760px){.side{position:static;min-height:0;border-right:none;border-bottom:1px solid var(--ink);display:flex;flex-wrap:wrap;padding:.5rem}}
+  .side .navlbl{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);padding:0 1.5rem 1rem}
+  @media(max-width:760px){.side .navlbl{display:none}}
+  .side button{display:flex;align-items:baseline;gap:.7rem;width:100%;text-align:left;background:none;border:none;font:inherit;font-size:.88rem;color:var(--ink);padding:.62rem 1.5rem;cursor:pointer;border-left:3px solid transparent;transition:.18s}
+  .side button::before{content:attr(data-no);font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.08em;color:var(--muted)}
+  .side button:hover{background:rgba(23,24,27,.05)}
+  .side button.on{border-left-color:var(--ink);background:rgba(23,24,27,.06);font-weight:600}
+  .side button.on::before{color:var(--ink)}
+  @media(max-width:760px){.side button{width:auto;border-left:none;border-bottom:2px solid transparent;padding:.5rem .8rem}.side button.on{border-bottom-color:var(--ink)}}
+  main{padding:2.2rem 2.4rem 6rem;max-width:none;min-width:0;position:relative;z-index:5}
+  @media(max-width:640px){main{padding:1.4rem 1.1rem 4rem}}
+  /* text-editing pages stay a comfortable reading width; the portal desk spreads full-width so the comments rail fills the right */
+  main .note,#p-home,#p-gallery,#p-materials,#p-manual{max-width:880px}
+  #p-accounts{max-width:1040px}
+  .panel{display:none}.panel.on{display:block;animation:pin .45s cubic-bezier(.22,1,.36,1)}
+  @keyframes pin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.panel.on{animation:none}}
+  .panel>h2{font-family:"Playfair Display",serif;font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:600;line-height:1.15;text-wrap:balance;margin-bottom:.4rem}
+  .panel>h2 em{font-style:italic;font-weight:500}
+  .panel>.sub{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:1.8rem}
+  /* ---- brand form controls: no native chrome anywhere ---- */
+  :root{accent-color:var(--ink)}
+  select{appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' stroke='%2317181b' stroke-width='1.2' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right .65rem center;padding-right:2rem!important}
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:none;border:1px solid var(--ink);
+    background:#fff;cursor:pointer;display:inline-grid;place-items:center;margin:0;padding:0;transition:background .15s}
+  input[type=checkbox]::before{content:"✓";font-size:10px;line-height:1;color:#fff;transform:scale(0);transition:transform .12s}
+  input[type=checkbox]:checked{background:var(--ink)}
+  input[type=checkbox]:checked::before{transform:scale(1)}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:grayscale(1);opacity:.65;cursor:pointer}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+  /* ---- fields ---- */
+  .field{margin-bottom:1.15rem}
+  label{display:block;font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+  input[type=text],textarea,select{width:100%;font:inherit;font-size:.92rem;color:var(--ink);background-color:#fff;border:1px solid rgba(23,24,27,.3);padding:.6rem .7rem;outline:none;transition:.15s}
+  input[type=text]:focus,textarea:focus,select:focus{border-color:var(--ink)}
+  textarea{resize:vertical;min-height:4.2rem;line-height:1.5}
+
+  /* ---- cards with blueprint corner ticks (same as portal .card.tick) ---- */
+  .grp{position:relative;background:var(--card);border:1px solid rgba(23,24,27,.3);padding:1.4rem;margin-bottom:1.1rem;transition:border-color .25s,box-shadow .25s}
+  .grp:hover{border-color:var(--ink);box-shadow:0 14px 34px rgba(23,24,27,.1)}
+  .grp::before,.grp::after{content:"";position:absolute;width:12px;height:12px;border:0 solid rgba(23,24,27,.5);pointer-events:none;z-index:1}
+  .grp::before{left:7px;top:7px;border-left-width:1px;border-top-width:1px}
+  .grp::after{right:7px;bottom:7px;border-right-width:1px;border-bottom-width:1px}
+  .grp>.gh{display:flex;align-items:center;justify-content:space-between;gap:.6rem;font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:1rem}
+  .grp>.gh .del{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(23,24,27,.3);padding:.28rem .5rem;cursor:pointer;color:var(--soft);background:none;transition:.18s}
+  .grp>.gh .del:hover{border-color:#8a2b2b;color:#fff;background:#8a2b2b}
+  .img-row{display:flex;align-items:center;gap:1rem}
+  .thumb{width:84px;height:84px;border:1px solid rgba(23,24,27,.4);background:#fff center/cover no-repeat;flex:none}
+  .img-actions{display:flex;flex-direction:column;gap:.45rem}
+  .file-lbl{display:inline-flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.45rem .8rem;border:1px solid var(--ink);cursor:pointer;transition:.18s}
+  .file-lbl:hover{background:var(--ink);color:#fff}
+  input[type=file]{display:none}
+  .hint{font-size:.74rem;color:var(--soft);margin-top:.35rem;line-height:1.5}
+  .note{position:relative;font-size:.85rem;color:#3c3e44;line-height:1.7;margin-bottom:1.8rem;border:1px solid rgba(23,24,27,.3);background:var(--card);padding:1rem 1.2rem}
+  .note::before,.note::after{content:"";position:absolute;width:12px;height:12px;border:0 solid rgba(23,24,27,.5);pointer-events:none}
+  .note::before{left:7px;top:7px;border-left-width:1px;border-top-width:1px}
+  .note::after{right:7px;bottom:7px;border-right-width:1px;border-bottom-width:1px}
+  .addbtn{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;padding:.8rem 1rem;border:1px dashed var(--ink);background:none;color:var(--ink);cursor:pointer;width:100%;transition:.2s}
+  .addbtn:hover{background:var(--ink);color:#fff;border-style:solid}
+  .book-tools{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin:.2rem 0 1.1rem;padding:.7rem .55rem .7rem .9rem;background:var(--card);border:1px solid rgba(23,24,27,.3)}
+  .book-tools .bt-label{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .book-tools .del{flex:none;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;border:1px solid rgba(23,24,27,.3);padding:.45rem .75rem;cursor:pointer;color:var(--soft);background:none;transition:.18s}
+  .book-tools .del:hover{border-color:#8a2b2b;color:#fff;background:#8a2b2b}
+  .book-tools .del.restore:hover{border-color:var(--ink);background:var(--ink);color:#fff}
+  .img-grid{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.2rem}
+  .img-cell{position:relative;width:112px;height:82px}
+  .img-cell .thumb{width:112px;height:82px;background-size:cover;background-position:center;border:1px solid rgba(23,24,27,.3)}
+  .img-cell .img-no{position:absolute;left:0;bottom:0;font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.08em;background:var(--ink);color:#fff;padding:.12rem .34rem}
+  .img-x{position:absolute;top:-9px;right:-9px;width:22px;height:22px;line-height:1;text-align:center;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;font-size:15px;padding:0;border-radius:0}
+  .img-x:hover{background:#8a2b2b;color:#fff;border-color:#8a2b2b}
+  .img-add{display:flex;align-items:center;justify-content:center;width:112px;height:82px;border:1px dashed var(--ink);color:var(--ink);cursor:pointer;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;text-align:center;transition:.18s}
+  .img-add:hover{background:var(--ink);color:#fff;border-style:solid}
+ /* ---- portal master-control desk (portal-matched) ---- */
+ .pd-bar{display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.2rem}
+ .pd-bar .field{margin:0;min-width:16rem;flex:1}
+ .pd-pills{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1.2rem}
+ .pd-pill{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .85rem;border:1px solid rgba(23,24,27,.3);background:transparent;color:#3c3e44;cursor:pointer;transition:.2s}
+ .pd-pill:hover{border-color:var(--ink);color:var(--ink)}
+ .pd-pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+ .pd-status{font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+ .swprev{display:inline-block;width:30px;height:30px;border:1px solid rgba(23,24,27,.4);vertical-align:middle;flex:none}
+ /* desk two-column layout: section management left (capped), live comments rail right (fills the space) */
+ .pd-cols{display:grid;grid-template-columns:minmax(0,46rem) minmax(20rem,1fr);gap:1.6rem;align-items:start}
+ @media(max-width:1100px){.pd-cols{grid-template-columns:1fr}}
+ .pd-side{position:sticky;top:66px;border:1px solid rgba(23,24,27,.3);background:var(--card)}
+ @media(max-width:1100px){.pd-side{position:static}}
+ .pd-side-h{display:flex;align-items:center;gap:.55rem;padding:.7rem .85rem;border-bottom:1px solid var(--ink);font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+ .pd-bell{position:relative;display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;font-size:.9rem;line-height:1}
+ .pd-bell .dot{position:absolute;top:-4px;right:-6px;min-width:14px;height:14px;padding:0 .18rem;background:#8a2b2b;color:#fff;font-family:"JetBrains Mono",monospace;font-size:.5rem;line-height:14px;text-align:center;border-radius:0}
+ .pd-bell.ring{animation:bellring .6s ease}
+ @keyframes bellring{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
+ .pd-feed{max-height:70vh;overflow:auto;padding:.6rem}
+ .pd-feed .fitem{margin-bottom:.6rem}
+ .pd-feed .fitem:last-child{margin-bottom:0}
+ .pd-feed .fref{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);line-height:1.4}
+ .pd-feed .fitem>.fref{display:block;font-size:.54rem;color:var(--soft);margin:.2rem 0 .45rem} /* the Reactions label */
+ .pd-feed .empty{color:var(--soft);font-size:.82rem;line-height:1.6;padding:.4rem .1rem}
+ /* clickable thread title bar — big, obvious, inverts to ink when open */
+ .pd-feed .fhead{display:flex;align-items:center;justify-content:space-between;gap:.6rem;cursor:pointer;user-select:none;
+   padding:.6rem .7rem;border:1px solid rgba(23,24,27,.4);background:#fff;transition:background .15s,border-color .15s}
+ .pd-feed .fhead:hover{background:rgba(23,24,27,.07);border-color:var(--ink)}
+ .pd-feed .fitem.open .fhead{background:var(--ink);border-color:var(--ink)}
+ .pd-feed .fitem.open .fhead .fref,.pd-feed .fitem.open .fmeta,.pd-feed .fitem.open .fchev{color:#fff}
+ .pd-feed .fmeta{display:inline-flex;align-items:center;gap:.5rem;font-family:"JetBrains Mono",monospace;font-size:.6rem;color:var(--soft);flex:none}
+ .pd-feed .fchev{display:inline-block;font-size:.9rem;line-height:1;transition:transform .15s;color:var(--ink)}
+ .pd-feed .fitem.open .fchev{transform:rotate(90deg)}
+ /* collapsed preview line — also clickable */
+ .pd-feed .fprev{display:flex;gap:.5rem;align-items:baseline;font-size:.8rem;color:var(--soft);cursor:pointer;
+   padding:.5rem .7rem;border:1px solid rgba(23,24,27,.4);border-top:none;transition:background .15s}
+ .pd-feed .fprev:hover{background:rgba(23,24,27,.04)}
+ .pd-feed .fprev .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .pd-feed .fprev .w{font-family:"JetBrains Mono",monospace;font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);flex:none}
+ .pd-feed .fitem.needs .fprev{color:var(--ink);font-weight:500}
+ .pd-feed .fitem.needs .fhead .fref::after{content:"";display:inline-block;width:6px;height:6px;background:#8a2b2b;margin-left:.45rem;vertical-align:middle} /* client is waiting */
+ .pd-feed .fitem.open .fhead .fref::after{display:none}
+ .pd-feed .fbody{padding:.7rem;border:1px solid var(--ink);border-top:none}
+ /* thread bubbles — studio on paper, client in ink (exactly like the portal) */
+ .pd-msg{max-width:88%;border:1px solid rgba(23,24,27,.35);background:var(--card);padding:.8rem .95rem;margin-bottom:.6rem;font-size:.88rem;line-height:1.6}
+ .pd-msg.client{background:var(--ink);color:#f4f5f7;border-left:none;margin-left:auto}
+ .pd-msg .w{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.3rem}
+ .pd-msg.client .w{color:#9aa0a8}
+ .pd-act{display:flex;gap:.8rem;align-items:baseline;padding:.45rem 0;border-bottom:1px dotted rgba(23,24,27,.2);font-size:.82rem}
+ .pd-act .t{font-family:"JetBrains Mono",monospace;font-size:.6rem;color:var(--muted);width:6.5rem;flex:none}
+ .pd-act .b{font-family:"JetBrains Mono",monospace;font-size:.56rem;border:1px solid var(--ink);padding:.1rem .4rem;flex:none}
+ .pd-act .b.s{background:var(--ink);color:#fff}
+ .grid2c{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+ @media(max-width:700px){.grid2c{grid-template-columns:1fr}}
+ #p-portal input,#p-portal textarea,#p-portal select,#p-accounts input,#p-accounts select{width:100%;font:inherit;font-size:.88rem;color:var(--ink);background-color:#fff;border:1px solid rgba(23,24,27,.3);padding:.5rem .6rem;outline:none;transition:.15s}
+ #p-portal input:focus,#p-portal textarea:focus,#p-portal select:focus,#p-accounts input:focus,#p-accounts select:focus{border-color:var(--ink)}
+ #p-portal .grp,#p-accounts .grp{padding:1rem}
+ #p-portal .irow,#p-accounts .irow{display:grid;gap:.5rem;align-items:end;margin-bottom:.6rem;padding-bottom:.6rem;border-bottom:1px dotted rgba(23,24,27,.2)}
+ #p-portal .irow .del,#p-accounts .irow .del{font-family:"JetBrains Mono",monospace;font-size:.62rem;border:1px solid rgba(23,24,27,.3);background:none;color:var(--soft);cursor:pointer;padding:.5rem .6rem;height:34px;transition:.18s}
+ #p-portal .irow .del:hover,#p-accounts .irow .del:hover{border-color:#8a2b2b;color:#fff;background:#8a2b2b}
+ #p-portal .mini,#p-accounts .mini{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .25rem;display:block}
+ #p-accounts .irow{align-items:center}
+ #p-accounts .role-admin{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:#fff;padding:.18rem .45rem;flex:none}
+ /* ---- Insights dashboard ---- */
+ #p-insights .ins-liverow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(23,24,27,.25);border:1px solid rgba(23,24,27,.25)}
+ @media(max-width:820px){#p-insights .ins-liverow{grid-template-columns:repeat(2,1fr)}}
+ #p-insights .ins-live{background:var(--card);padding:1rem 1.1rem}
+ #p-insights .ins-live.on{background:var(--ink)}
+ #p-insights .ins-live b{display:block;font-family:"Playfair Display",serif;font-size:2.1rem;font-weight:600;line-height:1}
+ #p-insights .ins-live span{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-top:.35rem}
+ #p-insights .ins-live.on b,#p-insights .ins-live.on span{color:#fff}
+ #p-insights .ins-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(23,24,27,.2);border:1px solid rgba(23,24,27,.2)}
+ @media(max-width:820px){#p-insights .ins-stats{grid-template-columns:repeat(2,1fr)}}
+ #p-insights .ins-stat{background:#fff;padding:.85rem 1rem}
+ #p-insights .ins-stat b{display:block;font-family:"Playfair Display",serif;font-size:1.6rem;font-weight:600;line-height:1.1}
+ #p-insights .ins-stat span{font-family:"JetBrains Mono",monospace;font-size:.52rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+ #p-insights .ins-bar{display:flex;align-items:center;gap:.6rem;padding:.28rem 0;font-size:.78rem}
+ #p-insights .ins-bar .l{width:9rem;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3c3e44}
+ #p-insights .ins-bar .track{flex:1;height:9px;border:1px solid rgba(23,24,27,.25);background:#fff}
+ #p-insights .ins-bar .fill{display:block;height:100%;background:var(--ink)}
+ #p-insights .ins-bar .n{font-family:"JetBrains Mono",monospace;font-size:.66rem;color:var(--ink);width:2.4rem;text-align:right;flex:none}
+ #p-insights .ins-spark{display:flex;align-items:flex-end;gap:.5rem;height:64px;padding-top:.4rem}
+ #p-insights .ins-spark .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.3rem}
+ #p-insights .ins-spark .col>span{width:100%;max-width:34px;background:var(--ink);display:block}
+ #p-insights .ins-spark .col em{font-family:"JetBrains Mono",monospace;font-size:.5rem;color:var(--muted);font-style:normal}
+ #p-insights .ins-scroll{max-height:20rem;overflow:auto}
+ #p-insights .pd-act .b{font-family:"JetBrains Mono",monospace;font-size:.54rem;border:1px solid var(--ink);padding:.08rem .4rem;flex:none;text-transform:uppercase}
+ #p-insights .pd-act .b.s{background:var(--ink);color:#fff}
+ /* privileges panel — blueprint card, portal-style tick boxes */
+ #p-accounts .priv-card{position:relative;margin:-.2rem 0 1.1rem;padding:.9rem 1rem;border:1px solid rgba(23,24,27,.35);background:var(--card)}
+ #p-accounts .priv-row{display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;padding:.45rem 0;border-top:1px dotted rgba(23,24,27,.18)}
+ #p-accounts .priv-row:first-of-type{border-top:none}
+ #p-accounts .priv-area{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);width:8rem;flex:none}
+ #p-accounts .priv-opt{display:inline-flex;align-items:center;gap:.45rem;font-family:"Inter",sans-serif;font-size:.82rem;letter-spacing:0;text-transform:none;color:var(--ink);cursor:pointer;margin:0}
+ /* checkboxes need ID-level specificity to beat the scoped "#p-accounts input{background:#fff}" rule */
+ #p-accounts input[type=checkbox]{width:15px;height:15px;padding:0;border:1px solid var(--ink);background:#fff}
+ #p-accounts input[type=checkbox]:checked{background:var(--ink)}
+ #p-accounts .priv-opt:hover input[type=checkbox]:not(:checked){background:rgba(23,24,27,.08)}
+ #p-portal .upb{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;flex:none;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;font-size:.85rem;line-height:1;transition:.18s}
+ #p-portal .upb:hover{background:var(--ink);color:#fff}
+ /* ---- manual / handbook ---- */
+ .man{max-width:52rem;line-height:1.7}
+ .man .toc{border:1px solid var(--ink);background:var(--card);padding:1.1rem 1.3rem;margin:0 0 2rem}
+ .man .toc p{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:var(--soft);margin:0 0 .7rem}
+ .man .toc ol{margin:0;padding-left:1.3rem;columns:2;column-gap:2rem}
+ @media(max-width:640px){.man .toc ol{columns:1}}
+ .man .toc a{color:var(--ink);text-decoration:none;font-size:.9rem;line-height:2}
+ .man .toc a:hover{text-decoration:underline}
+ .man section{border-top:1px solid var(--line);padding-top:1.7rem;margin-top:2.2rem;scroll-margin-top:70px}
+ .man section:first-of-type{border-top:none;margin-top:0;padding-top:0}
+ .man h3{font-family:"Playfair Display",serif;font-size:1.5rem;font-weight:600;margin:0 0 .3rem;display:flex;align-items:baseline;gap:.7rem}
+ .man h3 .n{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.1em;color:var(--soft);flex:none}
+ .man h3 em{font-style:italic;font-weight:500}
+ .man h4{font-family:"JetBrains Mono",monospace;font-size:.64rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin:1.5rem 0 .5rem}
+ .man p{margin:.5rem 0;color:#3c3e44}
+ .man ol,.man ul{margin:.5rem 0 .9rem;padding-left:1.3rem;color:#3c3e44}
+ .man li{margin:.35rem 0}
+ .man b,.man strong{color:var(--ink);font-weight:600}
+ .man code{font-family:"JetBrains Mono",monospace;font-size:.82em;background:#e6e8eb;border:1px solid var(--line);padding:.08em .38em;color:var(--ink);white-space:nowrap}
+ .man kbd{font-family:"JetBrains Mono",monospace;font-size:.72em;border:1px solid var(--ink);border-bottom-width:2px;padding:.1em .4em;background:#fff}
+ .man .cmd{font-family:"JetBrains Mono",monospace;font-size:.82rem;background:#eceef1;border:1px solid var(--ink);padding:.75rem .9rem;overflow-x:auto;margin:.7rem 0;color:var(--ink)}
+ .man .box{border:1px solid rgba(23,24,27,.28);background:var(--card);padding:.85rem 1.05rem;margin:1rem 0;font-size:.9rem}
+ .man .box.tip{border-left-color:#2b6b3c}
+ .man .box.warn{border-left-color:#8a2b2b}
+ .man .box .h{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:.3rem}
+ .man .top{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);text-decoration:none;float:right;margin-top:.4rem}
+ .man .top:hover{color:var(--ink)}
+ .man table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.86rem}
+ .man th{text-align:left;font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);font-weight:500;border-bottom:1px solid var(--ink);padding:.45rem .5rem}
+ .man td{border-bottom:1px dotted var(--line);padding:.55rem .5rem;color:#3c3e44;vertical-align:top}
+ @media(max-width:720px){
+   .bar{padding:.85rem 1rem;gap:.75rem}
+   .bar .right{width:100%;margin-left:0;justify-content:space-between}
+   .bar .sect{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+   .side{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding:.45rem .75rem;scrollbar-width:none}
+   .side::-webkit-scrollbar{display:none}
+   .side button{flex:0 0 auto;min-height:44px;white-space:nowrap}
+   .btn,.addbtn,.file-lbl,input,select,textarea{min-height:44px}
+   .grp{padding:1.05rem}
+   .grp>.gh{align-items:flex-start;flex-direction:column}
+   .img-row,.book-tools{align-items:stretch;flex-direction:column}
+   .img-actions{flex-direction:row;flex-wrap:wrap}
+   .pd-bar{align-items:stretch;flex-direction:column}
+   .pd-bar .field{min-width:0;width:100%}
+   .pd-cols{grid-template-columns:1fr}
+   .pd-pills{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:.35rem;scrollbar-width:none}
+   .pd-pills::-webkit-scrollbar{display:none}
+   .pd-pill{flex:0 0 auto;min-height:44px;white-space:nowrap}
+   .pd-feed{max-height:none}
+   .pd-msg{max-width:96%}
+   .pd-act{align-items:flex-start;flex-wrap:wrap}
+   .pd-act .t{width:auto}
+   #p-portal .irow,#p-accounts .irow{grid-template-columns:1fr!important}
+   #p-insights .ins-liverow,#p-insights .ins-stats{grid-template-columns:1fr}
+   #p-insights .ins-bar .l{width:6.5rem}
+ }
+</style>
+<link rel="stylesheet" href="elevate.css?v=20260704">
+<script src="dialog.js"></script>
+<script src="ambient.js" defer></script>
+</head>
+<body class="e-page">
+<canvas id="gridfx" style="position:fixed;inset:0;z-index:0;width:100%;height:100%;pointer-events:none"></canvas>
+
+<div id="cmsGate" hidden>
+  <div class="cg-card">
+    <p class="kick">Elevé — Studio CMS</p>
+    <h1>Staff <em>only</em></h1>
+    <p class="sub">The content manager and client desks are private. Sign in with your studio account — clients' space is the portal, not here.</p>
+    <form id="cmsGateForm">
+      <label for="cgEmail">Staff email</label>
+      <input id="cgEmail" type="email" placeholder="you@studio.com" autocomplete="username">
+      <label for="cgPass">Password</label>
+      <input id="cgPass" type="password" required placeholder="••••••••" autocomplete="current-password">
+      <button class="btn solid" type="submit" id="cgBtn" style="width:100%;justify-content:center;height:auto;padding:.85rem">Enter the studio →</button>
+      <p class="cg-err" id="cgErr" role="alert"></p>
+    </form>
+  </div>
+</div>
+<header class="bar">
+  <a class="logo" href="index.html">ELEVÉ</a>
+  <span class="sect">— Content Manager</span>
+  <div class="right">
+    <span class="sect" id="staffWho" style="display:none;letter-spacing:.14em"></span>
+    <span class="save" id="save">Applied ✓</span>
+    <a class="btn" href="index.html" target="_blank">Home ↗</a>
+    <a class="btn" href="gallery.html" target="_blank">Gallery ↗</a>
+    <a class="btn" href="materials.html" target="_blank">Materials ↗</a>
+    <a class="btn" href="portal.html" target="_blank">Portal ↗</a>
+    <button class="btn" id="exp">Export</button>
+    <label class="btn" for="imp">Import<input type="file" id="imp" accept="application/json"></label>
+    <button class="btn" id="rst">Reset</button>
+    <button class="btn" id="publish">Publish live</button>
+    <button class="btn solid" id="apply">Apply changes</button>
+    <button class="btn" id="staffOut" style="display:none" title="Sign out of the studio CMS">Sign out</button>
+  </div>
+</header>
+<div class="layout">
+  <aside class="side" id="side"><p class="navlbl">Sections</p></aside>
+  <main>
+    <p class="note">Pick a section on the left, edit its text and photos, then press <b>Apply changes</b>. Edits save to this browser and appear on the site. Use <b>Export</b> for a backup you can re-import or hand to a developer.</p>
+    <div id="panels"></div>
+  </main>
+</div>
+<script>
+/* ===== Elevé — full project handbook (rendered inside the CMS Manual tab) ===== */
+window.__manualHTML = `
+<div class="man" id="top">
+  <div class="toc">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#man-1">Quick start</a></li>
+      <li><a href="#man-2">Running the server</a></li>
+      <li><a href="#man-3">Opening the tools</a></li>
+      <li><a href="#man-4">The public website</a></li>
+      <li><a href="#man-5">This CMS — editing content</a></li>
+      <li><a href="#man-6">The Room Builder</a></li>
+      <li><a href="#man-7">Client Portals — master control</a></li>
+      <li><a href="#man-8">The client's experience</a></li>
+      <li><a href="#man-9">Signing in, roles &amp; privileges</a></li>
+      <li><a href="#man-10">Backups &amp; where data lives</a></li>
+      <li><a href="#man-11">Troubleshooting</a></li>
+      <li><a href="#man-12">Going live</a></li>
+    </ol>
+  </div>
+
+  <section id="man-1"><h3><span class="n">01</span>Quick <em>start</em></h3>
+    <p>This project is a full design-studio website <b>plus</b> three working tools: a room builder, a content manager (this page), and a per-client project portal. It runs on a small local server so the tools can save real data.</p>
+    <ol>
+      <li>Double-click <code>Start-Eleve.cmd</code> in the project folder. A window opens and your browser loads the site.</li>
+      <li><b>Keep that window open</b> — closing it stops everything.</li>
+      <li>Work through the browser at <code>http://localhost:4000</code>.</li>
+    </ol>
+    <div class="box tip"><span class="h">The one rule</span>Always reach the tools through <code>http://localhost:4000/…</code> — not by double-clicking the .html files. Same-origin is what lets the tools talk to the server.</div>
+  </section>
+
+  <section id="man-2"><h3><span class="n">02</span>Running the <em>server</em><a class="top" href="#top">↑ top</a></h3>
+    <p>The server is the engine behind the builder cloud-saves, the CMS publishing, and every client portal. Without it running, those features show "could not reach the studio server" — the public marketing pages still work offline, but the tools need it.</p>
+    <h4>Start it</h4>
+    <p>Double-click <code>Start-Eleve.cmd</code>. It checks Node is installed, installs dependencies the first time, launches the server and opens the browser. Leave the window open.</p>
+    <h4>Stop it</h4>
+    <p>Close that window. That's it.</p>
+    <div class="box warn"><span class="h">"EADDRINUSE: address already in use :::4000"</span>This means the server is <b>already running</b> — you don't need to start a second copy. Just open the browser at <code>http://localhost:4000</code>. To force a fresh start, close the old window first, or run:<div class="cmd">Get-NetTCPConnection -LocalPort 4000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }; npm start</div></div>
+  </section>
+
+  <section id="man-3"><h3><span class="n">03</span>Opening the <em>tools</em><a class="top" href="#top">↑ top</a></h3>
+    <table><thead><tr><th>Address</th><th>What it is</th></tr></thead><tbody>
+      <tr><td><code>/index.html</code></td><td>Home page (marketing site)</td></tr>
+      <tr><td><code>/gallery.html</code></td><td>3-D project gallery</td></tr>
+      <tr><td><code>/materials.html</code></td><td>Interactive materials library</td></tr>
+      <tr><td><code>/pricing.html</code> · <code>/book.html</code></td><td>Plans &amp; consultation booking</td></tr>
+      <tr><td><code>/builder.html</code></td><td>The CAD room builder</td></tr>
+      <tr><td><code>/cms.html</code></td><td>This content manager + master control</td></tr>
+      <tr><td><code>/portal.html</code></td><td>The client-facing project portal</td></tr>
+    </tbody></table>
+    <p>All prefixed with <code>http://localhost:4000</code>. In production they'd sit on your real domain.</p>
+  </section>
+
+  <section id="man-4"><h3><span class="n">04</span>The public <em>website</em><a class="top" href="#top">↑ top</a></h3>
+    <p>Five public pages, all sharing one monochrome design language (ink on porcelain, squared corners, Playfair + Inter + JetBrains Mono).</p>
+    <ul>
+      <li><b>Home</b> — cinematic hero with an interactive 3-D cube playground, services, project grid, founder, testimonials, contact form, big editorial footer.</li>
+      <li><b>Gallery</b> — a scroll-driven cover sequence then a 3-D coverflow per project; drag or use arrows, click to enlarge.</li>
+      <li><b>Materials</b> — a flippable book of material swatches with a shelf of other "libraries".</li>
+      <li><b>Pricing / Book</b> — plan tiers and a consultation request form (saved to the server).</li>
+    </ul>
+    <h4>Signature touches</h4>
+    <p>A subtle blueprint grid follows the cursor, a custom square cursor, and quiet piano UI sounds that perform two Chopin nocturnes as you click (toggle with the <kbd>♪</kbd> button, bottom-left). All motion respects the visitor's reduced-motion setting.</p>
+  </section>
+
+  <section id="man-5"><h3><span class="n">05</span>This CMS — editing <em>content</em><a class="top" href="#top">↑ top</a></h3>
+    <div class="box"><span class="h">You must sign in first</span>The CMS is private — opening <code>/cms.html</code> shows a <b>Staff only</b> gate and nothing else until you sign in. See <a href="#man-9">§09 — Signing in, roles &amp; privileges</a>. Clients cannot sign in here; their space is the portal.</div>
+    <p>The full left nav is <b>Home</b>, <b>Gallery</b>, <b>Materials</b>, <b>Client Portals</b>, <b>Accounts</b> and <b>Manual</b> — but <b>you only see the sections your role allows</b>, and they renumber to 01, 02… for what you can see. An editor sees Home/Gallery/Materials; a designer sees only Client Portals. The header shows who's signed in and a <b>Sign out</b> button. The first three sections edit the public site's text and photos.</p>
+    <h4>Editing &amp; saving</h4>
+    <ol>
+      <li>Pick a section, edit any field or upload photos.</li>
+      <li>Press <b>Apply changes</b> — edits save to <i>this browser</i> and appear on the public pages immediately.</li>
+      <li>Press <b>Publish live</b> to push them to the server so visitors on <i>any</i> device see them (asks for the admin password).</li>
+    </ol>
+    <h4>Backup buttons</h4>
+    <ul>
+      <li><b>Export</b> — downloads a JSON backup of all content.</li>
+      <li><b>Import</b> — restores from that JSON.</li>
+      <li><b>Reset</b> — reverts to the original built-in content.</li>
+    </ul>
+    <div class="box"><span class="h">Apply vs Publish</span><b>Apply</b> = this browser only (instant preview). <b>Publish live</b> = everyone, everywhere (needs the server + admin password).</div>
+  </section>
+
+  <section id="man-6"><h3><span class="n">06</span>The Room <em>Builder</em><a class="top" href="#top">↑ top</a></h3>
+    <p>A browser CAD tool at <code>/builder.html</code> — draw plans, furnish them, view in 3-D, estimate cost and export.</p>
+    <h4>Drawing</h4>
+    <ul>
+      <li><b>Room</b> / <b>Poly</b> tools draw rectangular or free-form rooms (wall lengths shown live).</li>
+      <li><b>Door / Window / Opening</b> — click a wall; they snap to its angle.</li>
+      <li>Shortcuts: <kbd>R</kbd> room · <kbd>Q</kbd> poly · <kbd>D</kbd> door · <kbd>W</kbd> window · <kbd>G</kbd> group · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</li>
+      <li>Wheel = zoom · hold <kbd>Space</kbd> + drag = pan.</li>
+    </ul>
+    <h4>Furnishing &amp; auto-fill</h4>
+    <p>Pick a furniture category and click items to place them (real millimetre sizes). Select a room, choose its <b>Type</b>, and press <b>Auto-fill</b> — the generator places furniture intelligently: storage backs onto walls, seating turns to face the room, everything respects clearance and keeps doorways clear. The <b>Crowd</b> slider sets how full <i>and</i> how tightly spaced.</p>
+    <h4>Floors &amp; 3-D</h4>
+    <ul>
+      <li><b>+ Add floor</b> stacks levels; the ghost of the floor below shows through.</li>
+      <li><b>3-D view</b> builds the model up to the floor you're on: ground floor gets a full slab, upper rooms get their own floor plates, and every lower room is capped with a ceiling. Use <b>▲▼</b> (or arrow keys) to move between levels; a subtle square cursor floats in the scene, and a marker pen lets you annotate.</li>
+    </ul>
+    <h4>Save &amp; export</h4>
+    <p>Export <b>PDF</b> (spec sheet), <b>DXF</b> (CAD), or <b>OBJ</b> (3-D). <b>Cloud save</b> keeps versioned copies on the server per account, and <b>Share link</b> makes a read-only URL. Work also autosaves locally with crash recovery.</p>
+  </section>
+
+  <section id="man-7"><h3><span class="n">07</span>Client Portals — master <em>control</em><a class="top" href="#top">↑ top</a></h3>
+    <p>The <b>Client Portals</b> tab is your operations desk. Every client account has its own isolated database file on the server (<code>server/portals/&lt;id&gt;.json</code>) — no client can ever see another's data.</p>
+    <h4>How clients appear</h4>
+    <p>Create the client's account in the <b>Accounts</b> tab (email, password, role <b>Client</b>), hand them the details, and curate what they see here. Self-registration on the portal is <b>disabled</b> — every account is studio-issued. Their private workspace is created the moment their account is. The <b>Client</b> dropdown lists <b>only client accounts</b> — your staff (editors, designers, admins) never show up here.</p>
+    <h4>The desk layout — section management + live comments</h4>
+    <p>When you open a client the desk splits in two: on the <b>left</b>, section management (the pills + editor); on the <b>right</b>, a persistent <b>Comments &amp; feedback</b> rail with a <b>notification bell</b>.</p>
+    <ul>
+      <li><b>Left — section management:</b> the pills <b>Project, Actions, Moodboards, Renders, Approvals, Materials, Budget, Threads, Schedule, Activity</b>. Fill a section (add/edit/remove rows) then press <b>Save → client</b>; it appears in their portal instantly.</li>
+      <li><b>Right — Comments rail:</b> every client signal in one always-on feed — likes/passes, comments on moodboard items and renders, change requests — newest first, each with a reply box (your reply is signed with your own name and lands live).</li>
+      <li><b>Notification bell (🔔):</b> shows a red count when new client activity arrives while you're in the desk, and gives a little ring. Click the bell to clear the count. The first time you ever open a client it starts clear (you're catching up); after that it flags anything new, even across sessions, until you click it.</li>
+      <li>Shortcuts: <b>Publish showcase</b> drops the full Aurora Penthouse example in as a starting point; <b>Reset workspace</b> empties it. (Both need the relevant privilege — see §09.)</li>
+    </ul>
+    <h4>Per section</h4>
+    <table><tbody>
+      <tr><td><b>Project</b></td><td>Name, code, location, the phase list and current phase, start &amp; reveal dates. "Create scaffold" starts a blank project.</td></tr>
+      <tr><td><b>Moodboards</b></td><td>Rooms, each with items — name, category, a swatch (upload a photo with <b>↑</b> or keep a gradient), optional AI hint. Clients like / pass / comment / request alternatives.</td></tr>
+      <tr><td><b>Renders</b></td><td>Rooms × versions (v1/v2/Final), each with a before &amp; after — press <b>↑</b> to upload real photos or renders (they're compressed and stored with that client), or keep gradients. Clients drag a slider to compare and approve a version.</td></tr>
+      <tr><td><b>Approvals</b></td><td>Titled sign-offs with deadlines. Clients approve or request changes with a note — decisions and notes appear here live. (The client's comments/likes live in the right-hand Comments rail, not a pill.)</td></tr>
+      <tr><td><b>Materials</b></td><td>The spec book — finish, SKU, supplier, room, availability (stock / lead / backordered).</td></tr>
+      <tr><td><b>Budget</b></td><td>Categories (estimated vs actual) and payment milestones (paid / due / upcoming).</td></tr>
+      <tr><td><b>Threads</b></td><td>Message topics. Type a reply and choose who it's from (e.g. "Camille — Lead Designer") — the client sees it live.</td></tr>
+      <tr><td><b>Schedule</b></td><td>Dated milestones — phases, site visits, deliveries, install week.</td></tr>
+      <tr><td><b>Activity</b></td><td>A read-only trail of every studio and client action on that project.</td></tr>
+    </tbody></table>
+    <div class="box tip"><span class="h">Live sync</span>Everything is realtime: anything you save or reply appears in the client's open portal <b>instantly</b> (the server pushes it), and their messages land in your Threads view the moment they're sent — nobody reloads anything.</div>
+  </section>
+
+  <section id="man-8"><h3><span class="n">08</span>The client's <em>experience</em><a class="top" href="#top">↑ top</a></h3>
+    <p>At <code>/portal.html</code> a client signs in and sees only their project. Until you publish anything, they get a warm "your studio is preparing your workspace" state (the Messages tab is open so they can say hello).</p>
+    <p>Once published they get a dashboard (phase stepper, next actions, live stats, recent activity) and the eight sections — reacting to moodboards, comparing and approving renders, signing off approvals, reading the spec book and budget, messaging the studio, and following the schedule. Every action writes to their own database and logs to Activity, which you see in master control.</p>
+  </section>
+
+  <section id="man-9"><h3><span class="n">09</span>Accounts, passwords &amp; <em>security</em><a class="top" href="#top">↑ top</a></h3>
+    <h4>Signing in</h4>
+    <p>Opening <code>/cms.html</code> shows a <b>Staff only</b> gate; nothing loads until you sign in with your studio email + password. The header then shows your name and role and a <b>Sign out</b> button. <b>Clients cannot sign in here</b> — they're turned away with a note pointing to the portal.</p>
+    <h4>The three staff roles</h4>
+    <table><tbody>
+      <tr><td><b>Editor</b></td><td>Edits &amp; publishes the public website (Home, Gallery, Materials). Sees those sections only.</td></tr>
+      <tr><td><b>Designer</b></td><td>Runs the Client Portals desk — publishes sections and replies to clients. Sees Client Portals only.</td></tr>
+      <tr><td><b>Admin</b></td><td>Everything, including the Accounts desk. Cannot be restricted.</td></tr>
+      <tr><td><b>Client</b></td><td>Not staff — signs in at the portal, sees only their own project.</td></tr>
+    </tbody></table>
+    <p>The role sets what a person sees, and the sidebar renumbers to 01, 02… for just their sections. <b>The server enforces every rule on every request</b> — hiding a button is only courtesy; the API itself refuses anything the person isn't allowed to do.</p>
+    <h4>Fine-grained privileges</h4>
+    <p>On each <b>editor</b> or <b>designer</b> account in the Accounts desk there's a <b>Privileges</b> panel — tick exactly what they may do, then press <b>Save</b> on their row:</p>
+    <ul>
+      <li><b>Website</b> — view · publish</li>
+      <li><b>Client portals</b> — view · add / edit · reply · reset / delete</li>
+      <li><b>Accounts</b> — view · add · edit · delete</li>
+    </ul>
+    <p>So you can make an editor who may <i>also</i> reply to clients but never edit their portals, or a designer who can only <i>view</i> and reply but not reset anything, or give someone read-only sight of Accounts. Ticks override the role's defaults; changing the role resets the ticks to that role's defaults. Admins are always full-access and can't be limited.</p>
+    <h4>Master password &amp; account rules</h4>
+    <ul>
+      <li>The studio <b>master password</b> (default <code>eleve-admin</code>) is an admin fallback used from the gate. <b>Change it before going live.</b></li>
+      <li>Public registration is <b>closed</b> — accounts come only from the Accounts desk. Sole exception: a fresh, empty server accepts its very first sign-up as the admin (bootstrap).</li>
+      <li>Passwords are salted + scrypt-hashed, never stored in plain text, and compared in constant time.</li>
+      <li>Changing an account's password (or deleting it) <b>signs that person out everywhere, instantly.</b></li>
+      <li>The last remaining admin can't be demoted or deleted — you can't lock yourself out.</li>
+      <li>Deleting an account also removes that person's portal and builder projects.</li>
+    </ul>
+    <h4>Attack protection</h4>
+    <p>After <b>12</b> wrong sign-in attempts the email/IP gets a short cool-off (about a minute, growing only if attempts keep coming, capped at ten) — kind to a mistyped password, hard on a bot. General API traffic is rate-limited too, all inputs are length-capped and escaped, and the site sends a strict Content-Security-Policy plus other security headers. If you ever lock yourself out, just wait a minute (or restart the server, which clears it).</p>
+    <div class="box warn"><span class="h">Before going public</span>Start the server with your own secrets — it <b>refuses to boot in production</b> on the defaults:<div class="cmd">set ADMIN_PASSWORD=your-strong-password
+set SECRET=some-long-random-string
+set ORIGINS=https://your-domain.com
+node server.js</div>Tell me and I'll bake these into your launcher / deploy config.</div>
+  </section>
+
+  <section id="man-10"><h3><span class="n">10</span>Backups &amp; where data <em>lives</em><a class="top" href="#top">↑ top</a></h3>
+    <table><thead><tr><th>What</th><th>Where</th></tr></thead><tbody>
+      <tr><td>Accounts, site content, builder projects, enquiries</td><td><code>server/db.json</code></td></tr>
+      <tr><td>Each client's portal</td><td><code>server/portals/&lt;id&gt;.json</code> (one file per client)</td></tr>
+      <tr><td>Automatic backups</td><td><code>server/backups/</code> (rolling, every 6 h — last 14 kept)</td></tr>
+      <tr><td>Activity log</td><td><code>server/events.log</code></td></tr>
+    </tbody></table>
+    <p>To back everything up, copy the <code>server</code> folder (or just those files). To move to a new machine, copy them across and start the server there.</p>
+  </section>
+
+  <section id="man-11"><h3><span class="n">11</span><em>Troubleshooting</em><a class="top" href="#top">↑ top</a></h3>
+    <table><thead><tr><th>Symptom</th><th>Fix</th></tr></thead><tbody>
+      <tr><td>"Could not reach the studio server"</td><td>Open the page through <code>http://localhost:4000/…</code> (not the file directly), and make sure <code>Start-Eleve.cmd</code> is running.</td></tr>
+      <tr><td>"EADDRINUSE :::4000"</td><td>The server is already running — just open the browser. Don't start a second copy.</td></tr>
+      <tr><td>Node "not recognized"</td><td>Install Node.js LTS from nodejs.org, then run the launcher again.</td></tr>
+      <tr><td>Sounds won't play</td><td>Browsers need one click first; check the <kbd>♪</kbd> toggle isn't muted.</td></tr>
+      <tr><td>A client can't see updates</td><td>Confirm you pressed <b>Save → client</b> for the right client; updates push live, and a safety-net sync runs every 20 s.</td></tr>
+      <tr><td>"Too many attempts — locked"</td><td>Too many wrong sign-ins. Wait about a minute and try again, or restart the server (the launcher window) to clear it immediately.</td></tr>
+      <tr><td>Signed out unexpectedly</td><td>Someone changed your account's password (that ends all your sessions), or your 30-day token expired. Sign in again.</td></tr>
+      <tr><td>A teammate can't see a section</td><td>Their role/privileges don't include it. Open Accounts and tick the privilege, or change their role.</td></tr>
+    </tbody></table>
+  </section>
+
+  <section id="man-12"><h3><span class="n">12</span>Going <em>live</em><a class="top" href="#top">↑ top</a></h3>
+    <p>On your own machine the <code>Start-Eleve</code> launcher is all you need. To make the site reachable from anywhere (real domain, always on), the server would run continuously on a small host — a low-cost VPS or a Render / Railway instance — with your custom <code>ADMIN_PASSWORD</code> and <code>SECRET</code> set, and (for hundreds of concurrent clients) the file store swapped for a database. The front-end and this CMS wouldn't change. When you're ready, ask and I'll write the deployment config and walk you through it.</p>
+    <div class="box tip"><span class="h">Remember</span>Run <code>Start-Eleve.cmd</code>, keep its window open, work through <code>http://localhost:4000/…</code>, and change the admin password before anyone else can reach it.</div>
+  </section>
+</div>`;
+</script>
+<script src="materials-data.js"></script>
+<script>
+(function(){
+  "use strict";
+  var KEY="eleve_cms";
+  var d; try{ d=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ d={}; }
+  d.text=d.text||{}; d.img=d.img||{}; d.gallery=d.gallery||{}; d.galleryAdd=d.galleryAdd||[]; d.galleryDel=d.galleryDel||[]; d.materials=d.materials||{}; d.materialsCat=d.materialsCat||{}; d.materialsDel=d.materialsDel||{}; d.materialsCatDel=d.materialsCatDel||{}; d.materialsAdd=d.materialsAdd||{}; d.materialsBooks=d.materialsBooks||[];
+  var saveEl=document.getElementById("save"), t0, dirty=false;
+  function markDirty(){ dirty=true; saveEl.textContent="Unsaved — press Apply"; saveEl.classList.add("on"); }
+  /* __ts stamps every save so the public pages / this editor never let older
+     server content overwrite newer local edits (see cms.js + the load pull below). */
+  function apply(){ d.__ts=Date.now(); localStorage.setItem(KEY,JSON.stringify(d)); dirty=false; saveEl.textContent="Applied ✓"; saveEl.classList.add("on"); clearTimeout(t0); t0=setTimeout(function(){saveEl.classList.remove("on");},1600); }
+  function safeImageUrl(u){
+    u=String(u||"").trim();
+    if(!u || /[\r\n"'()\\]/.test(u)) return "";
+    if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u)) return u;
+    if(/^blob:https?:\/\//i.test(u) || /^https?:\/\/[^\s]+$/i.test(u)) return u;
+    if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(u)) return u;
+    return "";
+  }
+
+  var homeText=[
+    ["hero_tag","Hero tagline (top)","text","Interior · Architecture · Exterior"],
+    ["hero_lead","Hero intro paragraph","area","Eleve is an elegant, minimalist studio…"],
+    ["founder_name","Founder name","text","Camille Devereux"],
+    ["founder_role","Founder role","text","Founder · Lead Interior Designer"],
+    ["founder_p1","Founder paragraph 1","area","Camille founded Eleve…"],
+    ["founder_p2","Founder paragraph 2","area","Her work is quiet and material-led…"],
+    ["founder_quote","Founder quote","area","I do not decorate rooms…"],
+    ["c_intro","Contact intro","area","Tell us about your space…"],
+    ["c_studio","Contact · Studio","text","14 Rua das Flores, Lisbon"],
+    ["c_email","Contact · Email","text","creative@sentientbyelysian.com"],
+    ["c_phone","Contact · Phone","text","+351 21 000 0000"],
+    ["footer","Footer line","text","Eleve Studio. All rights reserved."]
+  ];
+  var baseProjects=[
+    {n:"Aurora Penthouse",l:"Residential · Lisbon"},
+    {n:"Meridian Facade",l:"Commercial · Rotterdam"},
+    {n:"Lumen Retail",l:"Flagship · Singapore"},
+    {n:"Skyline Terrace",l:"Rooftop · Barcelona"},
+    {n:"Atelier Office",l:"Workplace · Berlin"}
+  ];
+
+  function fileToImg(file,cb){
+    var r=new FileReader();
+    r.onload=function(){ var im=new Image(); im.onload=function(){
+      var max=1500, sc=Math.min(1,max/Math.max(im.width,im.height));
+      var c=document.createElement("canvas"); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc);
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      cb(c.toDataURL("image/jpeg",0.85));
+    }; im.src=r.result; };
+    r.readAsDataURL(file);
+  }
+  function textField(label,type,ph,get,set){
+    var w=document.createElement("div"); w.className="field";
+    var lb=document.createElement("label"); lb.textContent=label; w.appendChild(lb);
+    var el=document.createElement(type==="area"?"textarea":"input"); if(type!=="area") el.type="text";
+    el.placeholder=ph||""; el.value=get()||"";
+    el.addEventListener("input",function(){ set(el.value); markDirty(); });
+    w.appendChild(el); return w;
+  }
+  function imageField(label,hint,get,set){
+    var w=document.createElement("div"); w.className="field";
+    var lb=document.createElement("label"); lb.textContent=label; w.appendChild(lb);
+    var row=document.createElement("div"); row.className="img-row";
+    var th=document.createElement("div"); th.className="thumb";
+    function paint(){ var u=safeImageUrl(get()); th.style.backgroundImage=u?"url('"+u+"')":"none"; }
+    paint();
+    var act=document.createElement("div"); act.className="img-actions";
+    var fl=document.createElement("label"); fl.className="file-lbl"; fl.textContent="Upload image";
+    var fi=document.createElement("input"); fi.type="file"; fi.accept="image/*"; fl.appendChild(fi);
+    fi.addEventListener("change",function(){ var f=fi.files[0]; if(!f)return; fileToImg(f,function(u){ set(u); markDirty(); paint(); }); fi.value=""; });
+    var cl=document.createElement("button"); cl.className="btn"; cl.style.fontSize=".7rem"; cl.textContent="Remove";
+    cl.addEventListener("click",function(){ set(""); markDirty(); paint(); });
+    act.appendChild(fl); act.appendChild(cl);
+    row.appendChild(th); row.appendChild(act); w.appendChild(row);
+    if(hint){ var h=document.createElement("p"); h.className="hint"; h.textContent=hint; w.appendChild(h); }
+    return w;
+  }
+  /* multi-image manager — add as many photos as you like, remove any, bound to store.imgs (array of data URLs) */
+  function imagesField(label,hint,store){
+    var w=document.createElement("div"); w.className="field";
+    var lb=document.createElement("label"); lb.textContent=label; w.appendChild(lb);
+    var grid=document.createElement("div"); grid.className="img-grid"; w.appendChild(grid);
+    function arr(){ if(!Array.isArray(store.imgs)){ store.imgs = store.img ? [store.img] : []; if(store.img) delete store.img; } return store.imgs; }
+    function paint(){
+      grid.innerHTML="";
+      var a=arr();
+      a.forEach(function(u,idx){
+        u=safeImageUrl(u);
+        if(!u) return;
+        var cell=document.createElement("div"); cell.className="img-cell";
+        var th=document.createElement("div"); th.className="thumb"; th.style.backgroundImage="url('"+u+"')"; cell.appendChild(th);
+        var no=document.createElement("span"); no.className="img-no"; no.textContent=(idx+1); cell.appendChild(no);
+        var rm=document.createElement("button"); rm.className="img-x"; rm.title="Remove image"; rm.textContent="×";
+        rm.addEventListener("click",function(){ a.splice(idx,1); markDirty(); paint(); });
+        cell.appendChild(rm); grid.appendChild(cell);
+      });
+      var add=document.createElement("label"); add.className="img-add"; add.appendChild(document.createTextNode("+ Add image"+(a.length?"s":"")));
+      var fi=document.createElement("input"); fi.type="file"; fi.accept="image/*"; fi.multiple=true; fi.style.display="none"; add.appendChild(fi);
+      fi.addEventListener("change",function(){
+        var files=Array.prototype.slice.call(fi.files||[]); if(!files.length)return;
+        var pending=files.length;
+        files.forEach(function(f){ fileToImg(f,function(u){ arr().push(u); if(--pending<=0){ markDirty(); paint(); } }); });
+        fi.value="";
+      });
+      grid.appendChild(add);
+    }
+    paint();
+    if(hint){ var h=document.createElement("p"); h.className="hint"; h.textContent=hint; w.appendChild(h); }
+    return w;
+  }
+  function projectCard(store,title,onDel){
+    var g=document.createElement("div"); g.className="grp";
+    var gh=document.createElement("div"); gh.className="gh"; var sp=document.createElement("span"); sp.textContent=title; gh.appendChild(sp);
+    if(onDel){ var db=document.createElement("button"); db.className="del"; db.textContent="Delete"; db.addEventListener("click",onDel); gh.appendChild(db); }
+    g.appendChild(gh);
+    g.appendChild(textField("Name","text","Project name",function(){return store.name;},function(v){store.name=v;}));
+    g.appendChild(textField("Subtitle","text","Residential · City",function(){return store.loc;},function(v){store.loc=v;}));
+    g.appendChild(textField("Description","area","Short project description…",function(){return store.desc;},function(v){store.desc=v;}));
+    g.appendChild(imagesField("Project images","Add as many as you like — each becomes a slide in the project’s carousel. The first is the cover.",store));
+    return g;
+  }
+
+  var panels=document.getElementById("panels"), side=document.getElementById("side");
+  var sections=[{id:"home",label:"Home"},{id:"gallery",label:"Gallery"},{id:"materials",label:"Materials"},{id:"portal",label:"Client Portals"},{id:"insights",label:"Insights"},{id:"accounts",label:"Accounts"},{id:"manual",label:"Manual"}];
+
+  /* Home */
+  var pHome=document.createElement("div"); pHome.className="panel"; pHome.id="p-home";
+  pHome.innerHTML='<h2>Home <em>page</em></h2><p class="sub">index.html — hero, founder and contact.</p>';
+  pHome.appendChild(imageField("Founder photo","Replaces the portrait block in the About section.",function(){return d.img.founder_photo;},function(v){ if(v)d.img.founder_photo=v; else delete d.img.founder_photo; }));
+  homeText.forEach(function(fld){ pHome.appendChild(textField(fld[1],fld[2],fld[3],function(){return d.text[fld[0]];},function(v){d.text[fld[0]]=v;})); });
+  panels.appendChild(pHome);
+
+  /* Gallery */
+  var pGal=document.createElement("div"); pGal.className="panel"; pGal.id="p-gallery";
+  pGal.innerHTML='<h2>The <em>gallery</em></h2><p class="sub">gallery.html — intro and projects.</p>';
+  pGal.appendChild(textField("Gallery intro","area","A walk through recent projects…",function(){return d.text.gallery_intro;},function(v){d.text.gallery_intro=v;}));
+  var projWrap=document.createElement("div"); pGal.appendChild(projWrap);
+  var addBtn=document.createElement("button"); addBtn.className="addbtn"; addBtn.textContent="+ Add project"; pGal.appendChild(addBtn);
+  panels.appendChild(pGal);
+  function renderProjects(){
+    projWrap.innerHTML="";
+    /* the 5 built-in projects — each deletable (hidden via d.galleryDel, restorable below) */
+    baseProjects.forEach(function(bp,i){
+      if(d.galleryDel.indexOf(i)!==-1) return;
+      d.gallery[i]=d.gallery[i]||{};
+      projWrap.appendChild(projectCard(d.gallery[i],"Project "+(i+1)+" — "+bp.n,function(){
+        eleveUI.confirm("Delete “"+((d.gallery[i]&&d.gallery[i].name)||bp.n)+"” from the gallery? You can restore it from the list below.",{title:"Delete project",ok:"Delete"}).then(function(ok){
+          if(ok){ if(d.galleryDel.indexOf(i)===-1) d.galleryDel.push(i); markDirty(); renderProjects(); }
+        });
+      }));
+    });
+    /* projects added in the CMS — deletable outright */
+    d.galleryAdd.forEach(function(p,k){
+      projWrap.appendChild(projectCard(p,"Added — "+(p.name||"New project"),function(){
+        eleveUI.confirm("Delete this added project? This can’t be undone.",{title:"Delete project",ok:"Delete"}).then(function(ok){
+          if(ok){ d.galleryAdd.splice(k,1); markDirty(); renderProjects(); }
+        });
+      }));
+    });
+    /* hidden built-in projects — one-tap restore */
+    if(d.galleryDel.length){
+      var hid=document.createElement("div"); hid.className="grp";
+      var hh=document.createElement("div"); hh.className="gh"; var hs=document.createElement("span"); hs.textContent="Hidden projects ("+d.galleryDel.length+")"; hh.appendChild(hs); hid.appendChild(hh);
+      d.galleryDel.slice().sort(function(a,b){return a-b;}).forEach(function(i){
+        var row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.4rem 0;border-bottom:1px solid rgba(23,24,27,.08)";
+        var nm=document.createElement("span"); nm.style.cssText="font-size:.85rem;color:#5b5f66"; nm.textContent=(baseProjects[i]?baseProjects[i].n:"Project "+(i+1))+((d.gallery[i]&&d.gallery[i].name&&d.gallery[i].name!==baseProjects[i].n)?" — "+d.gallery[i].name:"");
+        var rb=document.createElement("button"); rb.className="addbtn"; rb.style.margin="0"; rb.textContent="Restore";
+        rb.addEventListener("click",function(){ var j=d.galleryDel.indexOf(i); if(j!==-1) d.galleryDel.splice(j,1); markDirty(); renderProjects(); });
+        row.appendChild(nm); row.appendChild(rb); hid.appendChild(row);
+      });
+      projWrap.appendChild(hid);
+    }
+  }
+  addBtn.addEventListener("click",function(){ d.galleryAdd.push({name:"New Project",loc:"Category · City",desc:""}); markDirty(); renderProjects(); });
+  renderProjects();
+
+  /* Materials */
+  var pMat=document.createElement("div"); pMat.className="panel"; pMat.id="p-materials";
+  pMat.innerHTML='<h2>The <em>materials</em></h2><p class="sub">materials.html — books, swatches and copy.</p>';
+  pMat.appendChild(textField("Intro eyebrow","text","Materials library",function(){return d.text.mat_eyebrow;},function(v){d.text.mat_eyebrow=v;}));
+  pMat.appendChild(textField("Intro paragraph","area","A tactile catalogue…",function(){return d.text.mat_intro;},function(v){d.text.mat_intro=v;}));
+  var MD=window.__MATERIALS_DATA||[];
+  var mSelW=document.createElement("div"); mSelW.className="field";
+  var mSelL=document.createElement("label"); mSelL.textContent="Book (category)"; mSelW.appendChild(mSelL);
+  var mSel=document.createElement("select");
+  function fillSelect(){
+    var prev=mSel.value; mSel.innerHTML="";
+    MD.forEach(function(cat,ci){
+      var nm=(d.materialsCat[ci]&&d.materialsCat[ci].name)||cat.name;
+      var count=cat.items.length+((d.materialsAdd[ci]||[]).length);
+      var o=document.createElement("option"); o.value=String(ci);
+      o.textContent=nm+" ("+count+")"+(d.materialsCatDel[ci]?" — hidden":""); mSel.appendChild(o);
+    });
+    d.materialsBooks.forEach(function(bk,bi){
+      var o=document.createElement("option"); o.value="a"+bi;
+      o.textContent=(bk.name||"New book")+" ("+((bk.items||[]).length)+") — added"; mSel.appendChild(o);
+    });
+    if(prev && Array.prototype.some.call(mSel.options,function(op){return op.value===prev;})) mSel.value=prev;
+  }
+  fillSelect();
+  mSelW.appendChild(mSel); pMat.appendChild(mSelW);
+  var mBox=document.createElement("div"); pMat.appendChild(mBox);
+
+  /* editable card for an added swatch (added-to-base OR added-book item) */
+  function swatchCard(store,title,onDel){
+    var g=document.createElement("div"); g.className="grp";
+    var gh=document.createElement("div"); gh.className="gh"; var sp=document.createElement("span"); sp.textContent=title; gh.appendChild(sp);
+    if(onDel){ var db=document.createElement("button"); db.className="del"; db.textContent="Delete"; db.addEventListener("click",onDel); gh.appendChild(db); }
+    g.appendChild(gh);
+    g.appendChild(textField("Name","text","Material name",function(){return store.name;},function(v){store.name=v;}));
+    g.appendChild(textField("Description","area","Short description…",function(){return store.desc;},function(v){store.desc=v;}));
+    g.appendChild(imageField("Photo","Shown as the swatch image.",function(){return store.img;},function(v){ if(v)store.img=v; else delete store.img; }));
+    return g;
+  }
+
+  function renderMat(){
+    mBox.innerHTML="";
+    var val=mSel.value, added=/^a/.test(val), bi=added?+val.slice(1):-1, ci=added?-1:+val;
+    if(!added && !MD[ci]) return;
+    if(added && !d.materialsBooks[bi]) return;
+    var bookHidden = !added && !!d.materialsCatDel[ci];
+    if(!added) d.materialsCat[ci]=d.materialsCat[ci]||{};
+
+    /* styled book toolbar */
+    var bt=document.createElement("div"); bt.className="book-tools";
+    var lbl=document.createElement("span"); lbl.className="bt-label"; lbl.textContent=(added?"Added book":"Book")+(bookHidden?" · hidden from site":""); bt.appendChild(lbl);
+    var bbtn=document.createElement("button"); bbtn.className="del"+(bookHidden?" restore":""); bbtn.textContent = added?"Delete book":(bookHidden?"Restore book":"Delete book");
+    bbtn.addEventListener("click",function(){
+      if(added){ eleveUI.confirm("Delete this added book and its swatches? This can’t be undone.",{title:"Delete book",ok:"Delete"}).then(function(ok){ if(ok){ d.materialsBooks.splice(bi,1); markDirty(); fillSelect(); mSel.value=(mSel.options[0]||{}).value||"0"; renderMat(); } }); }
+      else if(bookHidden){ delete d.materialsCatDel[ci]; markDirty(); fillSelect(); renderMat(); }
+      else eleveUI.confirm("Hide the whole “"+((d.materialsCat[ci]&&d.materialsCat[ci].name)||MD[ci].name)+"” book from the materials page? You can restore it here.",{title:"Delete book",ok:"Delete"}).then(function(ok){ if(ok){ d.materialsCatDel[ci]=true; markDirty(); fillSelect(); renderMat(); } });
+    });
+    bt.appendChild(bbtn); mBox.appendChild(bt);
+    if(bookHidden){ var note=document.createElement("p"); note.className="hint"; note.textContent="Hidden from the live materials page. Restore the book to edit its swatches."; mBox.appendChild(note); return; }
+
+    /* book name + subtitle */
+    if(added){
+      mBox.appendChild(textField("Book name","text","New book",function(){return d.materialsBooks[bi].name;},function(v){d.materialsBooks[bi].name=v;}));
+      mBox.appendChild(textField("Book subtitle","text","Short subtitle",function(){return d.materialsBooks[bi].sub;},function(v){d.materialsBooks[bi].sub=v;}));
+    } else {
+      mBox.appendChild(textField("Book name","text",MD[ci].name,function(){return d.materialsCat[ci].name;},function(v){d.materialsCat[ci].name=v;}));
+      mBox.appendChild(textField("Book subtitle","text",MD[ci].sub,function(){return d.materialsCat[ci].sub;},function(v){d.materialsCat[ci].sub=v;}));
+    }
+
+    if(!added){
+      /* built-in swatches — override + delete/restore */
+      MD[ci].items.forEach(function(m,ii){ var key=ci+"_"+ii; d.materials[key]=d.materials[key]||{};
+        var hidden=!!d.materialsDel[key];
+        var g=document.createElement("div"); g.className="grp";
+        var gh=document.createElement("div"); gh.className="gh"; var sp=document.createElement("span"); sp.textContent=(ii+1)+" · "+m.n+(hidden?" — hidden":""); gh.appendChild(sp);
+        var idb=document.createElement("button"); idb.className="del"+(hidden?" restore":""); idb.textContent=hidden?"Restore":"Delete";
+        idb.addEventListener("click",function(){ if(hidden){ delete d.materialsDel[key]; } else { d.materialsDel[key]=true; } markDirty(); renderMat(); });
+        gh.appendChild(idb); g.appendChild(gh);
+        if(!hidden){
+          g.appendChild(textField("Name","text",m.n,function(){return d.materials[key].name;},function(v){d.materials[key].name=v;}));
+          g.appendChild(textField("Description","area",m.d,function(){return d.materials[key].desc;},function(v){d.materials[key].desc=v;}));
+          g.appendChild(imageField("Photo (replaces swatch)","Leave empty to keep the swatch.",function(){return d.materials[key].img;},function(v){ if(v)d.materials[key].img=v; else delete d.materials[key].img; }));
+        }
+        mBox.appendChild(g);
+      });
+      /* swatches added to this built-in book */
+      d.materialsAdd[ci]=d.materialsAdd[ci]||[];
+      d.materialsAdd[ci].forEach(function(m,k){ mBox.appendChild(swatchCard(m,"Added — "+(m.name||"New material"),function(){ eleveUI.confirm("Delete this added material? This can’t be undone.",{title:"Delete material",ok:"Delete"}).then(function(ok){ if(ok){ d.materialsAdd[ci].splice(k,1); markDirty(); fillSelect(); renderMat(); } }); })); });
+    } else {
+      /* added book's own swatches */
+      d.materialsBooks[bi].items=d.materialsBooks[bi].items||[];
+      d.materialsBooks[bi].items.forEach(function(m,k){ mBox.appendChild(swatchCard(m,(k+1)+" · "+(m.name||"New material"),function(){ eleveUI.confirm("Delete this material? This can’t be undone.",{title:"Delete material",ok:"Delete"}).then(function(ok){ if(ok){ d.materialsBooks[bi].items.splice(k,1); markDirty(); fillSelect(); renderMat(); } }); })); });
+    }
+
+    /* add a swatch to whichever book is selected */
+    var addMat=document.createElement("button"); addMat.className="addbtn"; addMat.textContent="+ Add material to this book";
+    addMat.addEventListener("click",function(){
+      if(added){ d.materialsBooks[bi].items=d.materialsBooks[bi].items||[]; d.materialsBooks[bi].items.push({name:"New material",desc:"",img:""}); }
+      else { d.materialsAdd[ci]=d.materialsAdd[ci]||[]; d.materialsAdd[ci].push({name:"New material",desc:"",img:""}); }
+      markDirty(); fillSelect(); renderMat();
+    });
+    mBox.appendChild(addMat);
+  }
+  if(MD.length||d.materialsBooks.length){ mSel.addEventListener("change",renderMat); renderMat(); } else { mBox.innerHTML='<p class="hint">materials-data.js not found next to this file.</p>'; }
+  /* create a whole new book (always available) */
+  var addBookBtn=document.createElement("button"); addBookBtn.className="addbtn"; addBookBtn.style.marginTop=".7rem"; addBookBtn.textContent="+ Add new book";
+  addBookBtn.addEventListener("click",function(){ d.materialsBooks.push({name:"New Book",sub:"",items:[]}); markDirty(); fillSelect(); mSel.value="a"+(d.materialsBooks.length-1); renderMat(); });
+  pMat.appendChild(addBookBtn);
+  panels.appendChild(pMat);
+
+  /* Client Portals — master control (rendered by the desk script below) */
+  var pPortal=document.createElement("div"); pPortal.className="panel"; pPortal.id="p-portal";
+  pPortal.innerHTML='<h2>Client <em>portals</em></h2><p class="sub">Master control — publish and run every client’s workspace. Each client has an isolated database on the server.</p><div id="pdesk"><p class="hint">Loading requires the studio server + admin sign-in.</p></div>';
+  panels.appendChild(pPortal);
+  window.__initPortalDesk=function(){ if(window.__deskInit) return; window.__deskInit=true; window.__portalDesk(document.getElementById("pdesk")); };
+
+  /* Accounts — email / password / role management (rendered by the desk script below) */
+  var pAcc=document.createElement("div"); pAcc.className="panel"; pAcc.id="p-accounts";
+  pAcc.innerHTML='<h2>Account <em>management</em></h2><p class="sub">Every sign-in on the studio server — create, edit, delete, and grant roles.</p><div id="adesk"><p class="hint">Loading requires the studio server + admin sign-in.</p></div>';
+  panels.appendChild(pAcc);
+  window.__initAccountsDesk=function(){ if(window.__accInit) return; window.__accInit=true; window.__accountsDesk(document.getElementById("adesk")); };
+
+  /* Insights — admin-only live dashboard (rendered by the desk script below) */
+  var pIns=document.createElement("div"); pIns.className="panel"; pIns.id="p-insights";
+  pIns.innerHTML='<h2>Studio <em>insights</em></h2><p class="sub">Live activity, visitors, the builder in use now, every portal action and enquiry — all in one place.</p><div id="insdesk"><p class="hint">Loading…</p></div>';
+  panels.appendChild(pIns);
+  window.__initInsightsDesk=function(){ if(window.__insInit) return; window.__insInit=true; window.__insightsDesk(document.getElementById("insdesk")); };
+
+  /* Manual — full project handbook (static) */
+  var pMan=document.createElement("div"); pMan.className="panel"; pMan.id="p-manual";
+  pMan.innerHTML='<h2>The <em>handbook</em></h2><p class="sub">Everything in this project — how to run it, edit it, and operate your clients’ portals. Bookmark this tab.</p><div id="manbody"></div>';
+  panels.appendChild(pMan);
+  if(window.__manualHTML) document.getElementById("manbody").innerHTML=window.__manualHTML;
+
+  /* sidebar nav */
+  var navBtns={};
+  sections.forEach(function(sc,si){ var b=document.createElement("button"); b.textContent=sc.label; b.setAttribute("data-no","0"+(si+1)); navBtns[sc.id]=b; b.addEventListener("click",function(){ show(sc.id); }); side.appendChild(b); });
+  function show(id){ sections.forEach(function(sc){ document.getElementById("p-"+sc.id).classList.toggle("on",sc.id===id); navBtns[sc.id].classList.toggle("on",sc.id===id); }); if(id==="portal"&&window.__initPortalDesk) window.__initPortalDesk(); if(id==="accounts"&&window.__initAccountsDesk) window.__initAccountsDesk(); if(id==="insights"&&window.__initInsightsDesk) window.__initInsightsDesk(); }
+  show("home");
+
+  /* ---- staff identity: nav & toolbar reflect the signed-in person's PRIVILEGES (role defaults + per-user overrides) ---- */
+  window.__applyStaffRole=function(){
+    var role=window.__staffRole; if(!role) return;
+    function has(area,k){ if(role==="admin") return true; var c=window.__staffCan; return !!(c&&c[area]&&c[area][k]); }
+    var vis={ home:has("site","view"), gallery:has("site","view"), materials:has("site","view"),
+              portal:has("portal","view"), insights:(role==="admin"), accounts:has("accounts","view"), manual:true };
+    var n=0;
+    sections.forEach(function(sc){
+      var okr=vis[sc.id];
+      navBtns[sc.id].style.display=okr?"":"none";
+      if(okr){ n++; navBtns[sc.id].setAttribute("data-no",(n<10?"0":"")+n); } // renumber only what this person sees: 01, 02…
+    });
+    var who=document.getElementById("staffWho");
+    if(who){ who.textContent=(window.__staffName||"Studio")+" — "+role; who.style.display=""; }
+    var out=document.getElementById("staffOut"); if(out) out.style.display="";
+    var pb=document.getElementById("publish"); if(pb) pb.style.display=has("site","publish")?"":"none";
+    ["apply","exp","rst"].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=vis.home?"":"none"; });
+    var impL=document.querySelector('label[for="imp"]'); if(impL) impL.style.display=vis.home?"":"none";
+    var cur=sections.filter(function(sc){ return document.getElementById("p-"+sc.id).classList.contains("on"); })[0];
+    if(cur&&!vis[cur.id]){
+      var first=sections.filter(function(sc){ return vis[sc.id]; })[0];
+      if(first) show(first.id);
+    }
+  };
+  var outBtn=document.getElementById("staffOut");
+  if(outBtn) outBtn.addEventListener("click",function(){
+    eleveUI.confirm("Sign out of the studio CMS?",{title:"Sign out",ok:"Sign out"}).then(function(okr){
+      if(okr){ try{localStorage.removeItem("eleve_admin_token");}catch(e){} location.reload(); }
+    });
+  });
+
+  /* toolbar */
+  document.getElementById("apply").addEventListener("click",apply);
+  window.addEventListener("beforeunload",function(e){ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+  document.getElementById("exp").addEventListener("click",function(){ var blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="eleve-content.json"; a.click(); });
+  document.getElementById("imp").addEventListener("change",function(e){ var f=e.target.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ localStorage.setItem(KEY,r.result); location.reload(); }catch(err){ eleveUI.alert("This file could not be imported.",{title:"Import"}); } }; r.readAsText(f); });
+  document.getElementById("rst").addEventListener("click",function(){
+    eleveUI.confirm("Reset all content back to the original site? Your edits in this browser will be removed.",{title:"Reset content",ok:"Reset"}).then(function(ok){
+      if(ok){ localStorage.removeItem(KEY); location.reload(); }
+    });
+  });
+})();
+</script>
+<script>
+/* Elevé CMS — backend login / publish / initial load */
+(function(){
+  var base=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
+  /* CMS admin session lives under its OWN key — signing into the portal as a
+     client in the same browser must never overwrite the studio's admin token. */
+  var KEY="eleve_cms", TK="eleve_admin_token";
+  // On load: pull live content from server into localStorage, refresh once so the editor shows it.
+  // But keep local if it is NEWER than the server (unpublished "Apply" edits must not be reverted).
+  fetch(base+"/api/content",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+    if(j&&j.content){
+      var srvTs=+j.content.__ts||0, localTs=0;
+      try{ localTs=+(JSON.parse(localStorage.getItem(KEY)||"{}").__ts)||0; }catch(e){}
+      var inc=JSON.stringify(j.content);
+      if(srvTs>=localTs && inc!==(localStorage.getItem(KEY)||"{}") && !sessionStorage.getItem("cms_srv")){ sessionStorage.setItem("cms_srv","1"); localStorage.setItem(KEY,inc); location.reload(); }
+    }
+  }).catch(function(){});
+  function login(cb){
+    var t=localStorage.getItem(TK); if(t) return cb(t);
+    /* one shared staff sign-in (defined by the desk script below): account with a role, or master password */
+    var go=function(){ if(window.__staffAuth) window.__staffAuth().then(cb).catch(function(x){ if(x&&x.error) eleveUI.alert(x.error,{title:"Studio sign-in"}); });
+      else eleveUI.alert("Sign-in unavailable — reload the page.",{title:"Publish live"}); };
+    go();
+  }
+  var btn=document.getElementById("publish");
+  if(btn) btn.addEventListener("click",function(){
+    login(function(tok){
+      var content; try{ content=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ content={}; }
+      /* stamp publish time (newest wins everywhere) and mirror locally so this browser matches the server */
+      content.__ts=Date.now(); try{ localStorage.setItem(KEY,JSON.stringify(content)); }catch(e){}
+      fetch(base+"/api/content",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({content:content})})
+        .then(function(r){ if(r.status===401){ localStorage.removeItem(TK); throw {expired:true}; } return r.ok?r.json():Promise.reject(); })
+        .then(function(){ eleveUI.alert("Published live ✓ — visitors on any device now see these edits.",{title:"Published"}); })
+        .catch(function(e){ if(e&&e.expired) eleveUI.alert("Session expired — click Publish live again to log in.",{title:"Publish live"}); else eleveUI.alert("Publish failed — is the server running? (cd server && npm start)",{title:"Publish live"}); });
+    });
+  });
+})();
+</script>
+<script>
+/* ═══ Elevé CMS — CLIENT PORTAL MASTER-CONTROL DESK ═══
+   Full studio-side CRUD over every client's isolated portal database:
+   project, actions, moodboards, renders, approvals, materials, budget,
+   threads (reply as studio), schedule + live activity trail. */
+(function(){
+"use strict";
+/* Resolve the backend: same-origin when this page is served by the Node
+   server (port 4000 in dev, or 80/443 in production), otherwise reach the
+   local backend explicitly — so opening the file directly or via another
+   dev-server port still connects. */
+var base=(function(){
+  if(location.protocol==="file:") return "http://localhost:4000";
+  var p=location.port;
+  if(p==="4000"||p===""||p==="80"||p==="443") return "";
+  return "http://localhost:4000";
+})();
+var TK="eleve_admin_token"; /* separate from the portal's client token — the two sessions never clobber each other */
+function tok(){ try{return localStorage.getItem(TK);}catch(e){return null;} }
+/* does the signed-in staffer hold a privilege? (admins always do) */
+function canDo(area,k){ if(window.__staffRole==="admin") return true; var c=window.__staffCan; return !!(c&&c[area]&&c[area][k]); }
+/* value → CSS background: photos (data:/http/path) render as cover images, anything else as a gradient */
+function safeImg(v){
+  v=String(v==null?"":v).trim();
+  if(!v || /[\r\n"'()\\]/.test(v)) return "";
+  if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v)) return v;
+  if(/^blob:https?:\/\//i.test(v) || /^https?:\/\/[^\s]+$/i.test(v)) return v;
+  if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(v)) return v;
+  return "";
+}
+function swCSS(v){ v=String(v==null?"":v).trim();
+  var img=safeImg(v), sw=/^(?:linear-gradient|radial-gradient)\([^"'<>\\]*\)$|^#[0-9a-f]{3,8}$/i.test(v)?v:"#e8eaee";
+  return img ? "background:#e8eaee url('"+img+"') center/cover no-repeat" : "background:"+sw; }
+function fileToData(file,cb){ var r=new FileReader();
+  r.onload=function(){ var im=new Image(); im.onload=function(){
+    var max=1600, sc=Math.min(1,max/Math.max(im.width,im.height));
+    var c=document.createElement("canvas"); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    cb(c.toDataURL("image/jpeg",0.82));
+  }; im.src=r.result; }; r.readAsDataURL(file); }
+function auth(){ /* staff sign-in: personal account (with a role), or the master password as admin fallback */
+  return eleveUI.prompt("Staff email",{title:"Studio sign-in",placeholder:"you@studio.com",ok:"Continue"}).then(function(email){
+    if(email===null) throw {cancel:true};
+    email=(email||"").trim();
+    return eleveUI.prompt(email?("Password for "+email):"Studio master password",{title:"Studio sign-in",type:"password",ok:"Sign in"}).then(function(pw){
+      if(!pw) throw {cancel:true};
+      var call=email
+        ? fetch(base+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pw})})
+        : fetch(base+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
+      return call.then(function(r){ return r.json().then(function(j){ if(!r.ok) throw j; return j; }); })
+        .then(function(j){
+          var role=(j.user&&j.user.role)||"admin";
+          if(role==="user") throw {error:"That's a client account — it has no studio access."};
+          try{ localStorage.setItem(TK,j.token); }catch(e){}
+          enterCms(j.user||{role:"admin"});
+          return j.token;
+        });
+    });
+  });
+}
+window.__staffAuth=auth;
+
+/* ----- the gate: nobody sees the CMS until a staff sign-in succeeds ----- */
+function enterCms(user){
+  window.__staffRole=user.role||"admin";
+  window.__staffName=user.email?user.email.split("@")[0]:"Studio";
+  window.__staffCan=user.can||null;
+  document.body.classList.add("authed");
+  var g=document.getElementById("cmsGate"); if(g) g.hidden=true;
+  try{ if(window.__applyStaffRole) window.__applyStaffRole(); }catch(e){}
+  startStaffHeartbeat();
+}
+/* staff presence — shows the studio as "on now" in the admin Insights live panel */
+var __hbStarted=false;
+function startStaffHeartbeat(){
+  if(__hbStarted) return; __hbStarted=true;
+  var id; try{ id=sessionStorage.getItem("eleve_hb")||("cms"+Math.random().toString(36).slice(2)); sessionStorage.setItem("eleve_hb",id); }catch(e){ id="cms"+Math.random().toString(36).slice(2); }
+  function beat(){ if(document.visibilityState==="hidden"||!document.body.classList.contains("authed")) return;
+    try{ fetch(base+"/api/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:id,area:"cms",path:"/cms.html"}),keepalive:true}).catch(function(){}); }catch(e){} }
+  beat(); setInterval(beat,30000);
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") beat(); });
+}
+function showGate(msg){
+  document.body.classList.remove("authed");
+  var g=document.getElementById("cmsGate"); if(g) g.hidden=false;
+  var e=document.getElementById("cgErr"); if(e) e.textContent=msg||"";
+}
+(function boot(){
+  var t=tok();
+  if(!t) return showGate();
+  fetch(base+"/api/me",{headers:{Authorization:"Bearer "+t}})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(j){
+      if(!j||!j.user||j.user.role==="user"){ try{localStorage.removeItem(TK);}catch(e){} return showGate(); }
+      enterCms(j.user);
+    }).catch(function(){ showGate("Could not reach the studio server — make sure the Start-Eleve window is open."); });
+})();
+document.getElementById("cmsGateForm").addEventListener("submit",function(ev){
+  ev.preventDefault();
+  var email=(document.getElementById("cgEmail").value||"").trim(), pw=document.getElementById("cgPass").value;
+  var btn=document.getElementById("cgBtn"), err=document.getElementById("cgErr");
+  if(!pw){ err.textContent="Enter your password."; return; }
+  btn.disabled=true; err.textContent="";
+  var call=email
+    ? fetch(base+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,password:pw})})
+    : fetch(base+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
+  call.then(function(r){ return r.json().then(function(j){ if(!r.ok) throw j; return j; }); })
+    .then(function(j){
+      var user=j.user||{role:"admin"};
+      if(user.role==="user") throw {error:"Client accounts can't enter the studio — your project lives in the portal."};
+      try{ localStorage.setItem(TK,j.token); }catch(e){}
+      document.getElementById("cgPass").value="";
+      enterCms(user);
+    })
+    .catch(function(x){ err.textContent=(x&&x.error)||"Could not reach the studio server."; })
+    .then(function(){ btn.disabled=false; });
+});
+function A(path,method,body,retried){
+  return fetch(base+"/api"+path,{method:method||"GET",headers:Object.assign({"Content-Type":"application/json"},tok()?{Authorization:"Bearer "+tok()}:{}),body:body?JSON.stringify(body):undefined})
+    .then(function(r){ if(r.status===401&&!retried){ try{localStorage.removeItem(TK);}catch(e){} return auth().then(function(){ return A(path,method,body,true); }); }
+      return r.json().then(function(j){ if(!r.ok) throw j; return j; }); });
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function nid(){ return "x"+Math.random().toString(36).slice(2,10); }
+function d2i(t){ if(!t) return ""; var d=new Date(t); return d.toISOString().slice(0,10); }
+function i2d(v){ return v? new Date(v+"T12:00:00").getTime() : Date.now(); }
+/* tiny DOM helpers — shared by the Client Portals desk AND the Accounts desk */
+function el(html){ var d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; }
+function inp(v,ph,type){ return '<input type="'+(type||"text")+'" value="'+esc(v==null?"":v)+'" placeholder="'+esc(ph||"")+'">'; }
+function selHtml(v,opts){ return '<select>'+opts.map(function(o){ var val=o[0],lab=o[1]; return '<option value="'+esc(val)+'"'+(String(v)===String(val)?" selected":"")+'>'+esc(lab)+'</option>'; }).join("")+'</select>'; }
+
+window.__portalDesk=function(host){
+  var clients=[], cur={uid:null,doc:null,sec:"project",room:0,rroom:0,thread:0};
+  var SECS=[["project","Project"],["actions","Actions"],["moodboards","Moodboards"],["renders","Renders"],["approvals","Approvals"],["materials","Materials"],["budget","Budget"],["threads","Threads"],["schedule","Schedule"],["activity","Activity"]];
+  var deskDirty=false; /* true while the studio has unsaved edits — live updates then pause instead of clobbering them */
+  function refName(D,ref){ /* refId → a human name */
+    var rooms=(D.moodboards&&D.moodboards.rooms)||[];
+    for(var i=0;i<rooms.length;i++){ var its=rooms[i].items||[];
+      for(var j=0;j<its.length;j++) if(its[j].id===ref) return "Moodboard · "+rooms[i].name+" · "+its[j].name; }
+    var m=/^render:([^:]+):(.+)$/.exec(ref);
+    if(m){ var rr=((D.renders&&D.renders.rooms)||[]).find(function(r){return r.id===m[1];});
+      if(rr){ var v=(rr.versions||[]).find(function(x){return x.v===m[2];}); return "Render · "+rr.name+" · "+(v?v.label:m[2]); } }
+    return ref;
+  }
+  function fb(D,id,extra){ /* client feedback glyphs (read-only cell) */
+    var re=(D.reactions||{})[id], cs=((D.comments||{})[id]||[]).length, out=[];
+    if(re&&re.like===true) out.push("♥"); if(re&&re.like===false) out.push("✕");
+    if(cs) out.push("✎"+cs); if(extra) out.push(extra);
+    return '<span class="mono" style="font-size:.72rem;letter-spacing:.04em;display:block;padding:.55rem 0;color:var(--ink);white-space:nowrap">'+(out.join(" ")||'<span style="color:var(--line)">—</span>')+'</span>';
+  }
+  function grabDrafts(){ /* keep reply drafts alive across live re-renders */
+    var out={t:[],i:[],foc:null};
+    var ta=document.querySelectorAll("#pdEd .pd-reply textarea"), ins=document.querySelectorAll("#pdEd .pd-reply input");
+    Array.prototype.forEach.call(ta,function(x,k){ out.t[k]=x.value; if(document.activeElement===x) out.foc=["t",k]; });
+    Array.prototype.forEach.call(ins,function(x,k){ out.i[k]=x.value; if(document.activeElement===x) out.foc=["i",k]; });
+    return out;
+  }
+  function putDrafts(d){
+    if(!d) return;
+    var ta=document.querySelectorAll("#pdEd .pd-reply textarea"), ins=document.querySelectorAll("#pdEd .pd-reply input");
+    Array.prototype.forEach.call(ta,function(x,k){ if(d.t[k]) x.value=d.t[k]; });
+    Array.prototype.forEach.call(ins,function(x,k){ if(d.i[k]) x.value=d.i[k]; });
+    var list=d.foc&&(d.foc[0]==="t"?ta:ins), elx=list&&list[d.foc[1]];
+    if(elx){ elx.focus(); try{ elx.setSelectionRange(elx.value.length,elx.value.length); }catch(e){} }
+  }
+
+  function shell(){
+    host.innerHTML=
+      '<div class="pd-bar">'+
+        '<div class="field" style="flex:2"><label>Client</label><select id="pdClient"></select></div>'+
+        '<button class="btn" id="pdSeed" title="Publish the Aurora Penthouse showcase into this client">Publish showcase</button>'+
+        '<button class="btn" id="pdReset">Reset workspace</button>'+
+      '</div>'+
+      '<p class="pd-status" id="pdStatus">—</p>'+
+      '<div class="pd-cols">'+
+        '<div class="pd-main">'+
+          '<div class="pd-pills" id="pdPills"></div>'+
+          '<div id="pdEd"></div>'+
+          '<div id="pdSave" style="margin-top:1rem"></div>'+
+        '</div>'+
+        '<aside class="pd-side">'+
+          '<div class="pd-side-h"><span class="pd-bell" id="pdBell" title="New client activity"><svg width="13" height="14" viewBox="0 0 13 14" aria-hidden="true"><path d="M6.5 1a3 3 0 0 0-3 3c0 3-1.5 4-1.5 5h9c0-1-1.5-2-1.5-5a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="1"/><path d="M5 11.5a1.5 1.5 0 0 0 3 0" fill="none" stroke="currentColor" stroke-width="1"/></svg><span class="dot" id="pdBellDot" style="display:none">0</span></span> Comments &amp; feedback</div>'+
+          '<div class="pd-feed" id="pdFeed"><p class="empty">Open a client to see their likes, comments and requests here — live.</p></div>'+
+        '</aside>'+
+      '</div>';
+    document.getElementById("pdEd").addEventListener("input",function(e){
+      if(!(e.target.closest&&e.target.closest(".pd-reply"))) deskDirty=true; /* reply drafts are preserved separately */
+    });
+    if(!canDo("portal","edit")){ var sb=document.getElementById("pdSeed"); if(sb) sb.style.display="none"; }
+    if(!canDo("portal","reset")){ var rb=document.getElementById("pdReset"); if(rb) rb.style.display="none"; }
+    var bellEl=document.getElementById("pdBell");
+    if(bellEl) bellEl.style.cursor="pointer", bellEl.addEventListener("click",function(){ markSeen(); }); /* click clears the count */
+    /* choosing a client opens it immediately — no Open button */
+    document.getElementById("pdClient").addEventListener("change",function(){
+      var next=this.value, self=this;
+      if(deskDirty){
+        eleveUI.confirm("Discard your unsaved edits and switch client?",{title:"Unsaved changes",ok:"Discard & switch"})
+          .then(function(ok){ if(ok) openClient(next); else self.value=cur.uid||""; });
+      } else openClient(next);
+    });
+    document.getElementById("pdSeed").addEventListener("click",function(){
+      if(!cur.uid) return;
+      eleveUI.confirm("Publish the full Aurora Penthouse showcase into this client's workspace? Their current portal content will be replaced.",{title:"Publish showcase",ok:"Publish"}).then(function(ok){
+        if(ok) A("/admin/portal/"+cur.uid+"/seed-demo","POST",{}).then(function(){ eleveUI.toast("Showcase published ✓"); openClient(cur.uid); loadClients(); });
+      });
+    });
+    document.getElementById("pdReset").addEventListener("click",function(){
+      if(!cur.uid) return;
+      eleveUI.confirm("Reset this client's workspace to empty? All portal content for this client will be removed (accounts and builder projects are untouched).",{title:"Reset workspace",ok:"Reset"}).then(function(ok){
+        if(ok) A("/admin/portal/"+cur.uid+"/reset","POST",{}).then(function(){ eleveUI.toast("Workspace reset ✓"); openClient(cur.uid); loadClients(); });
+      });
+    });
+  }
+  function loadClients(){
+    return A("/admin/portal/clients").then(function(j){
+      clients=j.clients||[];
+      var sel=document.getElementById("pdClient");
+      sel.innerHTML=clients.map(function(c){
+        return '<option value="'+c.id+'"'+(c.id===cur.uid?" selected":"")+'>'+esc(c.email)+(c.project?(" — "+esc(c.project)):" — (no project yet)")+(c.pending?(" · "+c.pending+" pending"):"")+"</option>";
+      }).join("")||'<option value="">No client accounts yet</option>';
+    });
+  }
+  function status(email){
+    document.getElementById("pdStatus").textContent=(email||cur.uid)+"  ·  isolated DB: portals/"+cur.uid+".json  ·  live ●  ·  updated "+new Date(cur.doc.updatedAt).toLocaleString();
+  }
+  function openClient(uid){
+    if(!uid) return;
+    A("/admin/portal/"+uid).then(function(j){
+      cur.uid=uid; cur.doc=j.portal; cur.email=j.client.email; cur.sec=cur.sec||"project"; cur.room=0; cur.rroom=0; cur.thread=0;
+      feedOpen={}; /* threads start collapsed for each client */
+      status(cur.email);
+      pills(); editor(); renderFeed();
+      var hasSeen=false; try{ hasSeen=localStorage.getItem("eleve_seen_"+uid)!==null; }catch(e){}
+      if(hasSeen) updateBell(); else markSeen(); /* first-ever open: catch up silently; after that, flag new activity */
+      live(uid);
+    }).catch(function(x){ if(!x||!x.cancel) eleveUI.alert((x&&x.error)||"Could not open client.",{title:"Master control"}); });
+  }
+  /* ----- live comments rail + notification bell (right side of the desk) ----- */
+  function feedCount(D){ var n=0,C=(D&&D.comments)||{},k;
+    for(k in C) n+=(C[k]||[]).filter(function(m){return m.by==="client";}).length;
+    n+=Object.keys((D&&D.reactions)||{}).length;
+    ((D&&D.threads)||[]).forEach(function(t){ n+=t.messages.filter(function(m){return m.by==="client";}).length; });
+    return n; }
+  function updateBell(){
+    var bell=document.getElementById("pdBell"), dot=document.getElementById("pdBellDot"); if(!bell||!dot) return;
+    if(!cur.doc){ dot.style.display="none"; return; }
+    var seen=0; try{ seen=parseInt(localStorage.getItem("eleve_seen_"+cur.uid)||"0",10)||0; }catch(e){}
+    var unread=Math.max(0, feedCount(cur.doc)-seen);
+    if(unread>0){ dot.textContent=unread>99?"99+":unread; dot.style.display="";
+      bell.classList.remove("ring"); void bell.offsetWidth; bell.classList.add("ring"); }
+    else dot.style.display="none";
+  }
+  function markSeen(){ if(!cur.doc) return; try{ localStorage.setItem("eleve_seen_"+cur.uid, String(feedCount(cur.doc))); }catch(e){} updateBell(); }
+  var feedOpen={}, feedBound=false; /* which comment threads are expanded (by refId) */
+  function cssString(s){ return String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\r?\n/g,"\\a "); }
+  function selRef(ref){ return '#pdFeed .fitem[data-ref="'+cssString(ref)+'"]'; }
+  function feedBubble(m){ return '<div class="pd-msg'+(m.by==="client"?" client":"")+'" style="max-width:100%;margin-bottom:.35rem"><span class="w">'+(m.by==="client"?"CLIENT":esc(m.who||"Studio"))+' · '+new Date(m.t).toLocaleDateString()+'</span>'+esc(m.text)+'</div>'; }
+  function threadHead(ref){ var msgs=(cur.doc.comments||{})[ref]||[];
+    return '<div class="fhead ftoggle" data-ref="'+esc(ref)+'"><span class="fref">'+esc(refName(cur.doc,ref))+'</span>'+
+      '<span class="fmeta"><span class="fcount">'+msgs.length+'</span> <span class="fchev">▸</span></span></div>'; }
+  function threadBody(ref){ var msgs=(cur.doc.comments||{})[ref]||[];
+    return '<div class="fbody">'+msgs.map(feedBubble).join("")+
+      (canDo("portal","reply")?'<div class="pd-reply"><textarea rows="2" data-ref="'+esc(ref)+'" placeholder="Reply to the client…" style="margin-top:.2rem"></textarea><button class="btn solid sendbtn" data-ref="'+esc(ref)+'" style="margin-top:.4rem">Send reply</button></div>':"")+'</div>'; }
+  function threadPrev(ref){ var msgs=(cur.doc.comments||{})[ref]||[], last=msgs[msgs.length-1]||{}, needs=last.by==="client";
+    return '<div class="fprev ftoggle" data-ref="'+esc(ref)+'"><span class="w">'+(needs?"CLIENT":esc(last.who||"Studio"))+'</span><span class="t">'+esc(last.text||"")+'</span></div>'; }
+  /* expand/collapse ONE thread in place — never rebuilds the list, so the rail never jumps */
+  function toggleThread(ref){
+    var item=document.querySelector(selRef(ref)); if(!item) return;
+    var open=!feedOpen[ref]; feedOpen[ref]=open;
+    item.classList.toggle("open",open);
+    var b=item.querySelector(".fbody"), p=item.querySelector(".fprev");
+    if(b) b.remove(); if(p) p.remove();
+    item.insertAdjacentHTML("beforeend", open?threadBody(ref):threadPrev(ref));
+    if(open){ var t=item.querySelector("textarea"); if(t){ try{t.focus({preventScroll:true});}catch(e){} } }
+  }
+  function sendFeedReply(ref){
+    var item=document.querySelector(selRef(ref)); if(!item) return;
+    var t=item.querySelector(".pd-reply textarea"), txt=t?t.value:""; if(!txt.trim()) return;
+    var btn=item.querySelector(".sendbtn"); if(btn) btn.disabled=true;
+    A("/admin/portal/"+cur.uid+"/reply","POST",{refId:ref,who:window.__staffName||"Elevé Studio",text:txt}).then(function(j){
+      cur.doc.updatedAt=Date.now(); (cur.doc.comments[ref]=cur.doc.comments[ref]||[]).push(j.message); feedOpen[ref]=true;
+      var reply=item.querySelector(".pd-reply");
+      if(reply){ reply.insertAdjacentHTML("beforebegin", feedBubble(j.message)); if(t){ t.value=""; } } /* append in place — no scroll jump */
+      var cnt=item.querySelector(".fcount"); if(cnt) cnt.textContent=cur.doc.comments[ref].length;
+      item.classList.remove("needs");
+      if(btn) btn.disabled=false;
+      eleveUI.toast("Reply sent — the client sees it live ✓"); markSeen();
+    }).catch(function(x){ if(btn) btn.disabled=false; eleveUI.alert((x&&x.error)||"Could not send.",{title:"Comments"}); });
+  }
+  function bindFeed(h2){ if(feedBound) return; feedBound=true; /* one delegated listener survives every innerHTML swap */
+    h2.addEventListener("click",function(e){
+      if(e.target.closest&&e.target.closest(".pd-reply")){ var sb=e.target.closest(".sendbtn"); if(sb) sendFeedReply(sb.getAttribute("data-ref")); return; }
+      var tg=e.target.closest&&e.target.closest(".ftoggle"); if(tg) toggleThread(tg.getAttribute("data-ref"));
+    });
+  }
+  function renderFeed(){
+    var h2=document.getElementById("pdFeed"); if(!h2) return;
+    var D=cur.doc;
+    if(!D){ h2.innerHTML='<p class="empty">Open a client to see their likes, comments and requests here — live.</p>'; bindFeed(h2); return; }
+    var keepY=h2.scrollTop; /* live updates rebuild the list — keep the rail exactly where the eye left it */
+    var C=D.comments||{}, refs=Object.keys(C).filter(function(k){return (C[k]||[]).length;});
+    var rx=Object.keys(D.reactions||{});
+    if(!refs.length&&!rx.length){ h2.innerHTML='<p class="empty">No comments yet. When the client likes, passes, comments or requests a change, it lands here live.</p>'; bindFeed(h2); return; }
+    var html="";
+    if(rx.length){ html+='<div class="fitem"><span class="fref">Reactions · '+rx.length+'</span>'+
+      rx.map(function(id){ var like=D.reactions[id].like;
+        return '<div class="pd-act" style="padding:.35rem 0"><span class="b'+(like?" s":"")+'" style="width:5rem;text-align:center">'+(like?"♥ liked":"✕ passed")+'</span><span style="font-size:.78rem">'+esc(refName(D,id))+'</span></div>'; }).join("")+'</div>'; }
+    refs.sort(function(a,b){ return C[b][C[b].length-1].t - C[a][C[a].length-1].t; });
+    refs.forEach(function(ref){
+      var last=C[ref][C[ref].length-1], open=!!feedOpen[ref], needs=(last.by==="client");
+      html+='<div class="fitem'+(open?" open":"")+(needs?" needs":"")+'" data-ref="'+esc(ref)+'">'+threadHead(ref)+(open?threadBody(ref):threadPrev(ref))+'</div>';
+    });
+    h2.innerHTML=html; h2.scrollTop=keepY; bindFeed(h2);
+  }
+  /* ----- realtime: the server pushes the instant the client acts — no reload ----- */
+  var esrc=null;
+  function cMsgs(d){ return d?d.threads.reduce(function(s,t){ return s+t.messages.filter(function(m){return m.by==="client";}).length; },0):0; }
+  function live(uid){
+    if(!window.EventSource||!tok()) return;
+    try{ if(esrc) esrc.close(); }catch(e){}
+    esrc=new EventSource(base+"/api/admin/portal/"+uid+"/events?t="+encodeURIComponent(tok()));
+    esrc.onmessage=function(ev){
+      var d=null; try{ d=JSON.parse(ev.data); }catch(e){}
+      if(uid!==cur.uid||!cur.doc) return;
+      if(d&&d.updatedAt===cur.doc.updatedAt) return; /* our own save echoing back */
+      A("/admin/portal/"+uid).then(function(j){
+        if(uid!==cur.uid) return;
+        var prev=cur.doc;
+        cur.doc=j.portal; status(j.client.email);
+        /* every view refreshes live; if the studio has unsaved edits, pause instead of clobbering them */
+        if(!deskDirty){
+          var drafts=grabDrafts(); editor(); putDrafts(drafts);
+        } else {
+          eleveUI.toast("Updated by the client — finish or save your edit, then reopen the section");
+        }
+        pills(); renderFeed(); updateBell(); /* rail + bell always current */
+        /* say what actually happened */
+        var nCm=function(doc){ var n=0,C=doc.comments||{},k; for(k in C) n+=(C[k]||[]).length; return n; };
+        var nDecided=function(doc){ return (doc.approvals||[]).filter(function(a){return a.status!=="pending";}).length; };
+        var nRx=function(doc){ return Object.keys(doc.reactions||{}).length; };
+        var nRApp=function(doc){ return (doc.renders.rooms||[]).filter(function(r){return r.approved;}).length; };
+        if(cMsgs(cur.doc)>cMsgs(prev)) eleveUI.toast("New message from the client");
+        else if(nCm(cur.doc)>nCm(prev)) eleveUI.toast("New comment from the client ✎");
+        else if(nRApp(cur.doc)>nRApp(prev)) eleveUI.toast("The client approved a render ✓");
+        else if(nDecided(cur.doc)>nDecided(prev)) eleveUI.toast("The client decided on an approval");
+        else if(nRx(cur.doc)!==nRx(prev)) eleveUI.toast("New reaction from the client");
+        loadClients();
+      }).catch(function(){});
+    };
+  }
+  function pills(){
+    var D=cur.doc;
+    function badge(id){
+      if(!D) return "";
+      var n=0,k;
+      if(id==="comments"){ var C=D.comments||{}; for(k in C) n+=(C[k]||[]).length; n+=Object.keys(D.reactions||{}).length; }
+      else if(id==="approvals") n=(D.approvals||[]).filter(function(a){return a.status==="pending";}).length;
+      else if(id==="threads") n=(D.threads||[]).reduce(function(s,t){return s+t.messages.length;},0);
+      return n?" · "+n:"";
+    }
+    document.getElementById("pdPills").innerHTML=SECS.map(function(s){
+      return '<button class="pd-pill'+(cur.sec===s[0]?" on":"")+'" data-s="'+s[0]+'">'+s[1]+badge(s[0])+'</button>';
+    }).join("");
+    document.querySelectorAll("#pdPills .pd-pill").forEach(function(b){
+      b.addEventListener("click",function(){ cur.sec=b.getAttribute("data-s"); pills(); editor(); });
+    });
+  }
+  function saveBtn(sec,get){
+    var w=document.getElementById("pdSave");
+    if(!canDo("portal","edit")){ w.innerHTML='<p class="hint">View-only — your account doesn\'t have the portal “add / edit” privilege.</p>'; return; }
+    w.innerHTML='<button class="btn solid" id="pdDoSave">Save '+sec+' → client</button> <span class="pd-status" id="pdSaved"></span>';
+    document.getElementById("pdDoSave").addEventListener("click",function(){
+      A("/admin/portal/"+cur.uid,"PUT",{section:sec,data:get()}).then(function(j){
+        cur.doc.updatedAt=j.updatedAt;
+        document.getElementById("pdSaved").textContent="Saved "+new Date().toLocaleTimeString();
+        eleveUI.toast("Published to the client ✓"); loadClients();
+      }).catch(function(x){ eleveUI.alert((x&&x.error)||"Save failed.",{title:"Master control"}); });
+    });
+  }
+  function grab(row){ return Array.prototype.slice.call(row.querySelectorAll("input:not([type=file]),select,textarea")).map(function(i){ return i.value; }); }
+  function listEditor(hostEl,items,cols,make,toObj){
+    /* cols: [[label, gridWidth, html(item)]...]; toObj(values,item)→item */
+    hostEl.innerHTML="";
+    var grid=cols.map(function(c){return c[1];}).join(" ")+" 40px";
+    items.forEach(function(it,i){
+      var row=el('<div class="irow" style="grid-template-columns:'+grid+'">'+
+        cols.map(function(c){ return '<div><span class="mini">'+c[0]+'</span>'+c[2](it)+'</div>'; }).join("")+
+        '<button class="del" title="Remove">✕</button></div>');
+      row.querySelector(".del").addEventListener("click",function(){ items.splice(i,1); listEditor(hostEl,items,cols,make,toObj); });
+      row.addEventListener("input",function(){ toObj(grab(row),it); });
+      hostEl.appendChild(row);
+    });
+    var add=el('<button class="addbtn">+ Add</button>');
+    add.addEventListener("click",function(){ items.push(make()); listEditor(hostEl,items,cols,make,toObj); });
+    hostEl.appendChild(add);
+  }
+  function swCol(label){ return [label,"1.5fr",function(it){ var v=it[label==="Before"?"before":(label==="After"?"after":"sw")]||"";
+    return '<div class="swcell" style="display:flex;gap:.4rem;align-items:center"><span class="swprev" style="'+swCSS(v)+'"></span>'+inp(v,"linear-gradient(…) or ↑ photo")+
+      '<label class="upb" title="Upload a photo (stored with this client)">↑<input type="file" accept="image/*"></label></div>'; }]; }
+  function bindSwPreview(scope){ scope.querySelectorAll(".irow").forEach(function(row){
+    function paint(){ row.querySelectorAll(".swprev").forEach(function(p){
+      var i=p.parentElement.querySelector("input:not([type=file])"); if(i) p.style.cssText=swCSS(i.value); }); }
+    row.addEventListener("input",paint);
+    row.querySelectorAll(".upb input[type=file]").forEach(function(fi){
+      fi.addEventListener("change",function(){
+        var f=fi.files[0]; if(!f) return;
+        fileToData(f,function(u){
+          var cell=fi.closest(".swcell"), ti=cell&&cell.querySelector("input:not([type=file])");
+          if(!ti) return;
+          ti.value=u;
+          ti.dispatchEvent(new Event("input",{bubbles:true})); /* → row serialiser + preview */
+          eleveUI.toast("Photo attached — press Save to publish ✓");
+        });
+        fi.value="";
+      });
+    });
+  }); }
+
+  /* ---------- section editors ---------- */
+  function editor(){
+    var ed=document.getElementById("pdEd"), D=cur.doc; ed.innerHTML=""; document.getElementById("pdSave").innerHTML="";
+    deskDirty=false; /* fresh render = nothing unsaved */
+    if(cur.sec==="project"){
+      if(!D.project){
+        var mk=el('<button class="addbtn">+ Create the project scaffold</button>');
+        mk.addEventListener("click",function(){
+          D.project={name:"New Project",code:"ELV-"+String(Math.floor(1000+Math.random()*9000)),location:"Lisbon · Residential",
+            phases:["Concept","Design Development","Procurement","Execution","Styling"],phase:0,startedAt:Date.now(),targetAt:Date.now()+120*86400000};
+          editor();
+        });
+        ed.appendChild(el('<p class="hint">No project yet — the client sees a “studio is preparing your workspace” state.</p>'));
+        ed.appendChild(mk); return;
+      }
+      var p=D.project;
+      var g=el('<div class="grp"><div class="gh"><span>Project</span></div>'+
+        '<div class="grid2c"><div><span class="mini">Name</span>'+inp(p.name)+'</div><div><span class="mini">Code</span>'+inp(p.code)+'</div>'+
+        '<div><span class="mini">Location</span>'+inp(p.location)+'</div><div><span class="mini">Phases (comma-separated)</span>'+inp(p.phases.join(", "))+'</div>'+
+        '<div><span class="mini">Current phase</span>'+selHtml(p.phase,p.phases.map(function(n,i){return [i,(i+1)+" — "+n];}))+'</div>'+
+        '<div><span class="mini">Started</span>'+inp(d2i(p.startedAt),"","date")+'</div><div><span class="mini">Reveal target</span>'+inp(d2i(p.targetAt),"","date")+'</div></div></div>');
+      ed.appendChild(g);
+      saveBtn("project",function(){
+        var v=grab(g);
+        return { name:v[0]||"Untitled", code:v[1]||"", location:v[2]||"", phases:v[3].split(",").map(function(s){return s.trim();}).filter(Boolean),
+          phase:Math.max(0,parseInt(v[4],10)||0), startedAt:i2d(v[5]), targetAt:i2d(v[6]) };
+      });
+    }
+    else if(cur.sec==="actions"){
+      var hostL=el('<div class="grp"></div>'); ed.appendChild(hostL);
+      var TABS=[["mood","Moodboards"],["rend","Renders"],["appr","Approvals"],["mat","Materials"],["budg","Budget"],["msg","Messages"],["sched","Schedule"],["dash","Dashboard"]];
+      listEditor(hostL,D.actions,[
+        ["Label","2.4fr",function(it){return inp(it.label);}],
+        ["Opens tab","1fr",function(it){return selHtml(it.tab||"mood",TABS);}],
+        ["Done","0.7fr",function(it){return selHtml(it.done?"1":"0",[["0","Open"],["1","Done"]]);}]
+      ],function(){return {id:nid(),label:"New action",tab:"mood",done:false};},
+      function(v,it){ it.label=v[0]; it.tab=v[1]; it.done=v[2]==="1"; });
+      saveBtn("actions",function(){ return D.actions; });
+    }
+    else if(cur.sec==="moodboards"){
+      var rooms=D.moodboards.rooms;
+      var bar=el('<div class="pd-pills"></div>');
+      rooms.forEach(function(r,i){ var b=el('<button class="pd-pill'+(i===cur.room?" on":"")+'">'+esc(r.name)+'</button>');
+        b.addEventListener("click",function(){ cur.room=i; editor(); }); bar.appendChild(b); });
+      var addR=el('<button class="pd-pill">+ room</button>');
+      addR.addEventListener("click",function(){ rooms.push({id:nid(),name:"New Room",items:[]}); cur.room=rooms.length-1; editor(); });
+      bar.appendChild(addR); ed.appendChild(bar);
+      if(rooms.length){
+        var r=rooms[Math.min(cur.room,rooms.length-1)];
+        var head=el('<div class="grp"><div class="gh"><span>Room</span><button class="del" style="border:1px solid var(--line);background:none;cursor:pointer;font-size:.62rem;padding:.3rem .5rem">Delete room</button></div><span class="mini">Room name</span>'+inp(r.name)+'</div>');
+        head.querySelector("input").addEventListener("input",function(e){ r.name=e.target.value; });
+        head.querySelector(".del").addEventListener("click",function(){ rooms.splice(cur.room,1); cur.room=0; editor(); });
+        ed.appendChild(head);
+        var lst=el('<div class="grp"></div>'); ed.appendChild(lst);
+        listEditor(lst,r.items,[
+          ["Name","1.4fr",function(it){return inp(it.name);}],
+          ["Category","0.9fr",function(it){return inp(it.cat);}],
+          swCol("Swatch"),
+          ["AI hint (optional)","1.4fr",function(it){return inp(it.ai||"");}],
+          ["Client","0.5fr",function(it){return fb(D,it.id);}]
+        ],function(){return {id:nid(),name:"New item",cat:"Material",sw:"linear-gradient(135deg,#d9dce1,#b9bec6)",ai:""};},
+        function(v,it){ it.name=v[0]; it.cat=v[1]; it.sw=v[2]; it.ai=v[3]||undefined; });
+        bindSwPreview(lst);
+      }
+      saveBtn("moodboards",function(){ return D.moodboards; });
+    }
+    else if(cur.sec==="renders"){
+      var rr=D.renders.rooms;
+      var bar2=el('<div class="pd-pills"></div>');
+      rr.forEach(function(r,i){ var b=el('<button class="pd-pill'+(i===cur.rroom?" on":"")+'">'+esc(r.name)+'</button>');
+        b.addEventListener("click",function(){ cur.rroom=i; editor(); }); bar2.appendChild(b); });
+      var addR2=el('<button class="pd-pill">+ room</button>');
+      addR2.addEventListener("click",function(){ rr.push({id:nid(),name:"New Room",approved:null,versions:[]}); cur.rroom=rr.length-1; editor(); });
+      bar2.appendChild(addR2); ed.appendChild(bar2);
+      if(rr.length){
+        var r2=rr[Math.min(cur.rroom,rr.length-1)];
+        var head2=el('<div class="grp"><div class="gh"><span>Room · client approved: '+esc(r2.approved||"—")+'</span><button class="del" style="border:1px solid var(--line);background:none;cursor:pointer;font-size:.62rem;padding:.3rem .5rem">Delete room</button></div><span class="mini">Room name</span>'+inp(r2.name)+'</div>');
+        head2.querySelector("input").addEventListener("input",function(e){ r2.name=e.target.value; });
+        head2.querySelector(".del").addEventListener("click",function(){ rr.splice(cur.rroom,1); cur.rroom=0; editor(); });
+        ed.appendChild(head2);
+        var lst2=el('<div class="grp"></div>'); ed.appendChild(lst2);
+        listEditor(lst2,r2.versions,[
+          ["Key","0.6fr",function(it){return inp(it.v,"v1");}],
+          ["Label","1fr",function(it){return inp(it.label);}],
+          ["Note","1.2fr",function(it){return inp(it.note||"");}],
+          swCol("Before"), swCol("After"),
+          ["Client","0.5fr",function(it){return fb(D,"render:"+r2.id+":"+it.v,(r2.approved===it.v)?"✓":"");}]
+        ],function(){return {v:"v"+(r2.versions.length+1),label:"Concept v"+(r2.versions.length+1),note:"",before:"linear-gradient(135deg,#e3e5e9,#c9cdd4)",after:"linear-gradient(150deg,#c2c6cd,#8f949c)"};},
+        function(v,it){ it.v=v[0]; it.label=v[1]; it.note=v[2]; it.before=v[3]; it.after=v[4]; });
+        bindSwPreview(lst2);
+      }
+      saveBtn("renders",function(){ return D.renders; });
+    }
+    else if(cur.sec==="approvals"){
+      var hostA=el('<div class="grp"></div>'); ed.appendChild(hostA);
+      listEditor(hostA,D.approvals,[
+        ["Title","1.5fr",function(it){return inp(it.title);}],
+        ["Room / scope","0.9fr",function(it){return inp(it.room);}],
+        ["Due","0.9fr",function(it){return inp(d2i(it.due),"","date");}],
+        ["Status","0.9fr",function(it){return selHtml(it.status,[["pending","Pending"],["approved","Approved"],["changes","Changes requested"]]);}],
+        ["Client note","1.1fr",function(it){return '<span class="mono" style="font-size:.66rem;color:var(--soft);display:block;padding:.55rem 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(it.note||"")+'">'+esc(it.note||"—")+'</span>';}]
+      ],function(){return {id:nid(),title:"New approval",room:"",due:Date.now()+5*86400000,status:"pending"};},
+      function(v,it){ it.title=v[0]; it.room=v[1]; it.due=i2d(v[2]); it.status=v[3]; });
+      saveBtn("approvals",function(){ return D.approvals; });
+    }
+    else if(cur.sec==="materials"){
+      var hostM=el('<div class="grp"></div>'); ed.appendChild(hostM);
+      listEditor(hostM,D.materials,[
+        ["Name","1.3fr",function(it){return inp(it.name);}],
+        ["Category","0.8fr",function(it){return inp(it.cat);}],
+        ["Finish","0.7fr",function(it){return inp(it.finish);}],
+        ["Ref / SKU","0.8fr",function(it){return inp(it.sku);}],
+        ["Supplier","0.9fr",function(it){return inp(it.supplier);}],
+        ["Room","0.9fr",function(it){return inp(it.room);}],
+        ["Status","0.9fr",function(it){return selHtml(it.status,[["stock","In stock"],["lead","Lead time"],["back","Backordered"]]);}],
+        ["Lead","0.6fr",function(it){return inp(it.lead||"");}]
+      ],function(){return {id:nid(),name:"New material",cat:"Stone",finish:"",sku:"",supplier:"",room:"",status:"stock",lead:""};},
+      function(v,it){ it.name=v[0]; it.cat=v[1]; it.finish=v[2]; it.sku=v[3]; it.supplier=v[4]; it.room=v[5]; it.status=v[6]; it.lead=v[7]||undefined; });
+      saveBtn("materials",function(){ return D.materials; });
+    }
+    else if(cur.sec==="budget"){
+      var cw=el('<div class="grp"><span class="mini">Currency symbol</span>'+inp(D.budget.currency||"€")+'</div>');
+      cw.querySelector("input").addEventListener("input",function(e){ D.budget.currency=e.target.value; });
+      ed.appendChild(cw);
+      ed.appendChild(el('<p class="mini" style="margin:.6rem 0 .3rem">Categories — estimated vs actual</p>'));
+      var hostC=el('<div class="grp"></div>'); ed.appendChild(hostC);
+      listEditor(hostC,D.budget.categories,[
+        ["Category","1.6fr",function(it){return inp(it.name);}],
+        ["Estimated","0.9fr",function(it){return inp(it.est,"0","number");}],
+        ["Actual","0.9fr",function(it){return inp(it.actual,"0","number");}]
+      ],function(){return {id:nid(),name:"New category",est:0,actual:0};},
+      function(v,it){ it.name=v[0]; it.est=parseFloat(v[1])||0; it.actual=parseFloat(v[2])||0; });
+      ed.appendChild(el('<p class="mini" style="margin:.6rem 0 .3rem">Payment milestones</p>'));
+      var hostP=el('<div class="grp"></div>'); ed.appendChild(hostP);
+      listEditor(hostP,D.budget.milestones,[
+        ["Milestone","1.6fr",function(it){return inp(it.label);}],
+        ["Amount","0.8fr",function(it){return inp(it.amount,"0","number");}],
+        ["Due","0.9fr",function(it){return inp(d2i(it.due),"","date");}],
+        ["Status","0.9fr",function(it){return selHtml(it.status,[["paid","Paid"],["due","Due"],["upcoming","Upcoming"]]);}]
+      ],function(){return {id:nid(),label:"New milestone",amount:0,due:Date.now()+30*86400000,status:"upcoming"};},
+      function(v,it){ it.label=v[0]; it.amount=parseFloat(v[1])||0; it.due=i2d(v[2]); it.status=v[3]; });
+      saveBtn("budget",function(){ return D.budget; });
+    }
+    else if(cur.sec==="threads"){
+      var ths=D.threads;
+      var bar3=el('<div class="pd-pills"></div>');
+      ths.forEach(function(t,i){ var b=el('<button class="pd-pill'+(i===cur.thread?" on":"")+'">'+esc(t.title)+' · '+t.messages.length+'</button>');
+        b.addEventListener("click",function(){ cur.thread=i; editor(); }); bar3.appendChild(b); });
+      var addT=el('<button class="pd-pill">+ thread</button>');
+      addT.addEventListener("click",function(){
+        eleveUI.prompt("Thread title",{title:"New thread",ok:"Create"}).then(function(t){
+          if(!t||!t.trim()) return; ths.push({id:nid(),title:t.trim(),messages:[]});
+          A("/admin/portal/"+cur.uid,"PUT",{section:"threads",data:ths}).then(function(){ cur.thread=ths.length-1; editor(); eleveUI.toast("Thread created ✓"); });
+        });
+      });
+      bar3.appendChild(addT); ed.appendChild(bar3);
+      if(ths.length){
+        var t=ths[Math.min(cur.thread,ths.length-1)];
+        var box=el('<div class="grp"></div>');
+        box.innerHTML=(t.messages.map(function(m){
+          return '<div class="pd-msg'+(m.by==="client"?" client":"")+'"><span class="w">'+(m.by==="client"?"CLIENT":esc(m.who||"Studio"))+' · '+new Date(m.t).toLocaleString()+'</span>'+esc(m.text)+'</div>';
+        }).join("")||'<p class="hint">No messages yet.</p>');
+        ed.appendChild(box);
+        var rep=el('<div class="grp pd-reply"><div class="grid2c"><div><span class="mini">Reply as</span>'+inp(window.__staffName||"Elevé Studio")+'</div><div></div></div>'+
+          '<span class="mini">Message</span><textarea rows="3" placeholder="Write to the client…"></textarea>'+
+          '<button class="btn solid" style="margin-top:.6rem">Send reply</button></div>');
+        rep.querySelector("button").addEventListener("click",function(){
+          var who=rep.querySelector("input").value, txt=rep.querySelector("textarea").value;
+          if(!txt.trim()) return;
+          A("/admin/portal/"+cur.uid+"/reply","POST",{threadId:t.id,who:who,text:txt}).then(function(){
+            eleveUI.toast("Reply sent — the client will see it live ✓"); openClient(cur.uid);
+          });
+        });
+        if(canDo("portal","reply")) ed.appendChild(rep);
+      }
+    }
+    else if(cur.sec==="schedule"){
+      var hostS=el('<div class="grp"></div>'); ed.appendChild(hostS);
+      listEditor(hostS,D.schedule,[
+        ["Date","0.9fr",function(it){return inp(d2i(it.date),"","date");}],
+        ["Title","1.8fr",function(it){return inp(it.title);}],
+        ["Kind","0.9fr",function(it){return selHtml(it.kind,[["phase","Phase"],["site","Site visit"],["delivery","Delivery"],["install","Installation"]]);}],
+        ["Status","0.9fr",function(it){return selHtml(it.status,[["done","Done"],["next","Next"],["planned","Planned"]]);}]
+      ],function(){return {id:nid(),date:Date.now()+14*86400000,title:"New milestone",kind:"phase",status:"planned"};},
+      function(v,it){ it.date=i2d(v[0]); it.title=v[1]; it.kind=v[2]; it.status=v[3]; });
+      saveBtn("schedule",function(){ return D.schedule; });
+    }
+    else if(cur.sec==="activity"){
+      var acts=(D.activity||[]);
+      ed.appendChild(el('<div class="grp">'+(acts.map(function(a){
+        return '<div class="pd-act"><span class="t" style="width:9rem">'+new Date(a.t).toLocaleString()+'</span><span class="b'+(a.by==="studio"?" s":"")+'">'+esc(a.by)+'</span><span style="flex:1">'+(a.who?('<b>'+esc(a.who)+'</b> — '):"")+esc(a.text)+'</span></div>';
+      }).join("")||'<p class="hint">No activity yet.</p>')+'</div>'));
+    }
+  }
+
+  shell();
+  /* accounts desk tells us when accounts change (created / deleted / renamed);
+     one global listener, hook reassigned per init so retries never stack listeners */
+  if(!window.__pdEvtBound){ window.__pdEvtBound=true;
+    document.addEventListener("eleve:accounts-changed",function(){ if(window.__pdOnAccountsChanged) window.__pdOnAccountsChanged(); });
+  }
+  window.__pdOnAccountsChanged=function(){
+    loadClients().then(function(){
+      if(cur.uid&&!clients.find(function(c){return c.id===cur.uid;})){
+        try{ if(esrc) esrc.close(); }catch(e){}
+        cur.uid=null; cur.doc=null;
+        document.getElementById("pdStatus").textContent="That client account was deleted.";
+        document.getElementById("pdPills").innerHTML=""; document.getElementById("pdEd").innerHTML=""; document.getElementById("pdSave").innerHTML="";
+        if(clients.length) openClient(clients[0].id);
+      }
+    }).catch(function(){});
+  };
+  loadClients().then(function(){
+    var sel=document.getElementById("pdClient");
+    if(clients.length){ openClient(sel.value||clients[0].id); }
+    else document.getElementById("pdStatus").textContent="No client accounts yet — create one in the Accounts tab, then open it here.";
+  }).catch(function(x){
+    var authish=x&&(x.cancel||x.error);
+    var msg=(x&&x.cancel)?"Admin sign-in is required to open the client portals."
+          :(x&&x.error)?x.error
+          :"Could not reach the studio server — make sure the Start-Eleve window is open (or run: cd server && npm start).";
+    host.innerHTML='<div class="grp"><div class="gh"><span>Client portals</span></div>'+
+      '<p class="hint" style="margin:0 0 .9rem">'+esc(msg)+'</p>'+
+      '<button class="btn solid" id="pdRetry">'+(authish?"Sign in as admin":"Try again")+'</button>'+
+      (authish?'<p class="hint" style="margin-top:.6rem">The admin password is the studio master password (default: eleve-admin) — not a portal account password.</p>':"")+
+      '</div>';
+    host.querySelector("#pdRetry").addEventListener("click",function(){ window.__portalDesk(host); });
+  });
+};
+
+/* ═══ ACCOUNTS DESK — create / edit / delete sign-ins, grant roles ═══ */
+window.__accountsDesk=function(host){
+  var ROLES=[["user","Client"],["designer","Designer"],["editor","Editor"],["admin","Admin"]];
+  function fmtD(t){ return t?new Date(t).toLocaleDateString():"—"; }
+  function changed(){ try{ document.dispatchEvent(new CustomEvent("eleve:accounts-changed")); }catch(e){} }
+  function load(){
+    A("/admin/users").then(function(j){ render(j.users||[]); })
+    .catch(function(x){
+      var authish=x&&(x.cancel||x.error);
+      var msg=(x&&x.cancel)?"Admin sign-in is required to manage accounts."
+            :(x&&x.error)?x.error
+            :(x&&x.message)?("Page error: "+x.message)
+            :"Could not reach the studio server — make sure the Start-Eleve window is open (or run: cd server && npm start).";
+      host.innerHTML='<div class="grp"><div class="gh"><span>Accounts</span></div>'+
+        '<p class="hint" style="margin:0 0 .9rem">'+esc(msg)+'</p>'+
+        '<button class="btn solid" id="accRetry">'+(authish?"Sign in as admin":"Try again")+'</button>'+
+        (authish?'<p class="hint" style="margin-top:.6rem">The admin password is the studio master password (default: eleve-admin) — not a portal account password.</p>':"")+
+        '</div>';
+      host.querySelector("#accRetry").addEventListener("click",function(){
+        host.innerHTML='<p class="hint">One moment…</p>'; load();
+      });
+    });
+  }
+  function render(users){
+    var admins=users.filter(function(u){return u.role==="admin";}).length;
+    host.innerHTML=
+      (canDo("accounts","create")?
+      '<div class="grp"><div class="gh"><span>Create an account</span></div>'+
+        '<div class="irow" style="grid-template-columns:1.6fr 1.2fr .9fr auto;border-bottom:none;margin:0;padding:0">'+
+          '<div><span class="mini">Email</span><input type="text" id="accEmail" placeholder="client@email.com"></div>'+
+          '<div><span class="mini">Password — 6+ chars</span><input type="text" id="accPass" placeholder="••••••"></div>'+
+          '<div><span class="mini">Role</span>'+selHtml("user",ROLES).replace("<select>",'<select id="accRole">')+'</div>'+
+          '<button class="btn solid" id="accGo" style="height:34px">Create</button>'+
+        '</div>'+
+        '<p class="hint" style="margin-top:.5rem">Roles — <b>Client</b>: signs in at portal.html, sees only their project. <b>Designer</b>: opens the Client Portals desk, publishes sections and replies to clients. <b>Editor</b>: edits and publishes the public website. <b>Admin</b>: everything, including this Accounts desk. For editors and designers you can fine-tune the exact privileges (view / add / edit / delete…) on each account below.</p></div>':"")+
+      '<div class="grp"><div class="gh"><span>Accounts · '+users.length+'</span><span style="letter-spacing:.1em">'+admins+' admin'+(admins===1?"":"s")+'</span></div><div id="accList"></div></div>';
+    var listEl=host.querySelector("#accList");
+    users.forEach(function(u){
+      var canEdit=canDo("accounts","edit"), canDel=canDo("accounts","delete");
+      var row=el('<div class="irow" style="grid-template-columns:1.6fr .9fr 1.1fr auto auto auto">'+
+        '<div><span class="mini">Email</span>'+inp(u.email)+'</div>'+
+        '<div><span class="mini">Role</span>'+selHtml(u.role,ROLES)+'</div>'+
+        '<div><span class="mini">Created · activity</span><span class="mono" style="font-size:.66rem;color:var(--soft);display:block;padding:.55rem 0">'+fmtD(u.createdAt)+(u.project?(" · "+esc(u.project)):" · no project")+(u.msgs?(" · "+u.msgs+" msgs"):"")+'</span></div>'+
+        (canEdit?'<button class="btn" data-a="save" title="Save email, role &amp; privileges">Save</button>'+
+                 '<button class="btn" data-a="pass" title="Set a new password">Password</button>':"")+
+        (canDel?'<button class="del" data-a="del" title="Delete this account">✕</button>':"")+
+      '</div>');
+      var emailIn=row.querySelector("input"), roleSel=row.querySelector("select");
+      if(!canEdit){ emailIn.disabled=true; roleSel.disabled=true; }
+      listEl.appendChild(row);
+      /* per-user privileges — the fine-grained switches for editors & designers */
+      var privEl=null;
+      if((u.role==="editor"||u.role==="designer")&&canEdit){
+        var P=u.can||{};
+        var grp2=function(label,area,keys){
+          return '<div class="priv-row"><span class="priv-area">'+label+'</span>'+
+            keys.map(function(kk){ var on=P[area]&&P[area][kk[0]];
+              return '<label class="priv-opt"><input type="checkbox" data-pa="'+area+'" data-pk="'+kk[0]+'"'+(on?" checked":"")+'> '+kk[1]+'</label>'; }).join("")+
+          '</div>';
+        };
+        privEl=el('<div class="priv-card">'+
+          '<span class="mini" style="display:block;margin-bottom:.5rem">Privileges — '+esc(u.email)+'</span>'+
+          grp2("Website","site",[["view","view"],["publish","publish"]])+
+          grp2("Client portals","portal",[["view","view"],["edit","add / edit"],["reply","reply"],["reset","reset / delete"]])+
+          grp2("Accounts","accounts",[["view","view"],["create","add"],["edit","edit"],["delete","delete"]])+
+          '<p class="hint" style="margin:.55rem 0 0">Tick what they may do, then press Save on their row. Changing the role resets these to the role\'s defaults.</p>'+
+        '</div>');
+        listEl.appendChild(privEl);
+      }
+      var bs=row.querySelector('[data-a=save]');
+      if(bs) bs.addEventListener("click",function(){
+        var newRole=roleSel.value;
+        var body={email:emailIn.value.trim(),role:newRole};
+        if(privEl&&newRole===u.role){ var perms={};
+          Array.prototype.forEach.call(privEl.querySelectorAll("input[type=checkbox]"),function(cb){
+            var a=cb.getAttribute("data-pa"),k=cb.getAttribute("data-pk");
+            (perms[a]=perms[a]||{})[k]=cb.checked;
+          });
+          body.perms=perms;
+        }
+        var go=function(){ A("/admin/users/"+u.id,"PUT",body).then(function(){
+            eleveUI.toast("Account updated ✓"); changed(); load();
+          }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not update.",{title:"Accounts"}); }); };
+        if(newRole==="admin"&&u.role!=="admin")
+          eleveUI.confirm("Make “"+(emailIn.value.trim()||u.email)+"” an admin? Admins can open this CMS, every client portal, and manage accounts — privileges can't restrict them.",{title:"Grant admin",ok:"Make admin"}).then(function(okc){ if(okc) go(); });
+        else go();
+      });
+      var bp=row.querySelector('[data-a=pass]');
+      if(bp) bp.addEventListener("click",function(){
+        eleveUI.prompt("New password for "+u.email+" (6+ characters)",{title:"Set password",type:"password",ok:"Save password"}).then(function(pw){
+          if(pw==null||pw==="") return;
+          if(pw.length<6) return eleveUI.alert("Password must be at least 6 characters.",{title:"Set password"});
+          A("/admin/users/"+u.id,"PUT",{password:pw}).then(function(){ eleveUI.toast("Password updated ✓ — their old sessions are signed out"); })
+          .catch(function(x){ eleveUI.alert((x&&x.error)||"Could not update.",{title:"Set password"}); });
+        });
+      });
+      var bd=row.querySelector('[data-a=del]');
+      if(bd) bd.addEventListener("click",function(){
+        eleveUI.confirm("Delete “"+u.email+"” permanently? Their portal content and builder projects are removed too. This cannot be undone.",{title:"Delete account",ok:"Delete"}).then(function(okc){
+          if(!okc) return;
+          A("/admin/users/"+u.id,"DELETE").then(function(){ eleveUI.toast("Account deleted"); changed(); load(); })
+          .catch(function(x){ eleveUI.alert((x&&x.error)||"Could not delete.",{title:"Delete account"}); });
+        });
+      });
+    });
+    var goBtn=host.querySelector("#accGo");
+    if(goBtn) goBtn.addEventListener("click",function(){
+      var em=host.querySelector("#accEmail").value.trim(), pw=host.querySelector("#accPass").value, rl=host.querySelector("#accRole").value;
+      if(!/.+@.+\..+/.test(em)) return eleveUI.alert("Enter a valid email address.",{title:"Create account"});
+      if(!pw||pw.length<6) return eleveUI.alert("Password must be at least 6 characters.",{title:"Create account"});
+      A("/admin/users","POST",{email:em,password:pw,role:rl}).then(function(){
+        eleveUI.toast("Account created ✓"); changed(); load();
+      }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not create the account.",{title:"Create account"}); });
+    });
+  }
+  load();
+};
+
+/* ═══ INSIGHTS DESK — admin live dashboard ═══ */
+window.__insightsDesk=function(host){
+  var timer=null;
+  function fmtT(t){ return new Date(t).toLocaleString(); }
+  function bars(obj,limit){ var ents=Object.keys(obj).map(function(k){return [k,obj[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,limit||8);
+    var max=ents.reduce(function(m,e){return Math.max(m,e[1]);},1);
+    return ents.length? ents.map(function(e){ return '<div class="ins-bar"><span class="l" title="'+esc(e[0])+'">'+esc(e[0])+'</span><span class="track"><span class="fill" style="width:'+Math.max(3,Math.round(e[1]/max*100))+'%"></span></span><span class="n">'+e[1]+'</span></div>'; }).join("")
+      : '<p class="hint" style="margin:0">No data yet.</p>'; }
+  var EVLABEL={ "register-bootstrap":"Admin bootstrapped","admin-user-create":"Account created","admin-user-edit":"Account edited","admin-user-delete":"Account deleted","portal-admin-edit":"Portal section published","portal-reply":"Replied to client","portal-seed":"Published showcase","portal-reset":"Reset workspace","content-publish":"Website published","login-fail":"Failed sign-in","contact":"Contact enquiry","consult":"Consultation booked","subscribe":"Newsletter sign-up","clienterror":"Client-side error" };
+  function evText(e){ var label=EVLABEL[e.ev]||e.ev||"event";
+    var who=e.by?('<b>'+esc(e.by)+'</b> '):"";
+    var det=[]; if(e.email&&e.email!==e.by) det.push(esc(e.email)); if(e.client) det.push(esc(e.client)); if(e.section) det.push(esc(e.section)); if(e.role) det.push(esc(e.role)); if(e.changed) det.push(esc(e.changed)); if(e.msg) det.push(esc(String(e.msg).slice(0,80)));
+    return who+label+(det.length?(" — "+det.join(" · ")):""); }
+  function stat(n,label){ return '<div class="ins-stat"><b>'+n+'</b><span>'+label+'</span></div>'; }
+  function liveStat(n,label,accent){ return '<div class="ins-live'+(accent?" on":"")+'"><b>'+n+'</b><span>'+label+'</span></div>'; }
+  function render(j){
+    var L=j.live||{}, T=j.totals||{}, AN=j.analytics||{};
+    var days=Object.keys(AN.perDay||{}).sort();
+    var dmax=days.reduce(function(m,d){return Math.max(m,AN.perDay[d]);},1);
+    var spark=days.length? '<div class="ins-spark">'+days.map(function(d){ var h=Math.max(4,Math.round(AN.perDay[d]/dmax*46)); return '<span class="col" title="'+d+' · '+AN.perDay[d]+'"><span style="height:'+h+'px"></span><em>'+d.slice(5)+'</em></span>'; }).join("")+'</div>' : '<p class="hint" style="margin:0">No visits recorded in the last 7 days yet.</p>';
+    var actHtml=(j.activity||[]).length? j.activity.map(function(a){
+      return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(a.t)+'</span><span class="b'+(a.by==="studio"?" s":"")+'">'+esc(a.by)+'</span><span style="flex:1">'+(a.who?('<b>'+esc(a.who)+'</b> — '):"")+esc(a.text)+'</span><span class="mono" style="font-size:.56rem;color:var(--muted)">'+esc(a.client||"")+'</span></div>';
+    }).join("") : '<p class="hint" style="margin:0">No client activity yet.</p>';
+    var evHtml=(j.events||[]).length? j.events.map(function(e){
+      return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(e.t)+'</span><span>'+evText(e)+'</span></div>';
+    }).join("") : '<p class="hint" style="margin:0">No server events yet.</p>';
+    var enq=(j.enquiries&&j.enquiries.messages)||[], cons=(j.enquiries&&j.enquiries.consults)||[];
+    var enqHtml=(enq.length||cons.length)?
+      (enq.map(function(m){ return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(m.t)+'</span><span class="b">enquiry</span><span style="flex:1">'+esc(m.name||"")+' &lt;'+esc(m.email||"")+'&gt; — '+esc(String(m.message||"").slice(0,90))+'</span></div>'; }).join("")
+       + cons.map(function(c){ return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(c.t)+'</span><span class="b s">booking</span><span style="flex:1">'+esc(c.name||"")+' — '+esc(c.date||"")+' '+esc(c.time||"")+'</span></div>'; }).join(""))
+      : '<p class="hint" style="margin:0">No enquiries or bookings yet.</p>';
+    host.innerHTML=
+      '<div class="grp"><div class="gh"><span>Live now</span><span class="pd-status" id="insClock"></span></div>'+
+        '<div class="ins-liverow">'+
+          liveStat(L.site||0,"Visitors on site",(L.site>0))+
+          liveStat(L.builder||0,"Using the builder",(L.builder>0))+
+          liveStat(L.portal||0,"Clients in portal",(L.portal>0))+
+          liveStat(L.cms||0,"Studio in CMS",(L.cms>0))+
+        '</div><p class="hint" style="margin:.6rem 0 0">Anonymous, updates every few seconds. Someone counts as “now” if active in the last minute.</p></div>'+
+      '<div class="grp"><div class="gh"><span>Totals</span></div><div class="ins-stats">'+
+        stat(T.clients||0,"Clients")+stat(T.staff||0,"Staff")+stat(T.builderProjects||0,"Builder projects")+stat(T.portals||0,"Active portals")+
+        stat(T.pendingApprovals||0,"Approvals pending")+stat(T.openComments||0,"Comments")+stat(T.subscribers||0,"Subscribers")+stat((T.messages||0)+(T.consults||0),"Enquiries")+
+      '</div></div>'+
+      '<div class="grid2c" style="gap:1.1rem">'+
+        '<div class="grp"><div class="gh"><span>Visits · last 7 days</span><span>'+(AN.total||0)+' events</span></div>'+spark+'</div>'+
+        '<div class="grp"><div class="gh"><span>Top pages</span></div>'+bars(AN.pageviews||{},7)+'</div>'+
+      '</div>'+
+      '<div class="grp"><div class="gh"><span>All activity · every portal</span></div><div class="ins-scroll">'+actHtml+'</div></div>'+
+      '<div class="grid2c" style="gap:1.1rem">'+
+        '<div class="grp"><div class="gh"><span>Server events &amp; sign-ins</span></div><div class="ins-scroll">'+evHtml+'</div></div>'+
+        '<div class="grp"><div class="gh"><span>Enquiries &amp; bookings</span></div><div class="ins-scroll">'+enqHtml+'</div></div>'+
+      '</div>';
+    var clk=document.getElementById("insClock"); if(clk) clk.textContent="updated "+new Date().toLocaleTimeString();
+  }
+  var busy=false, again=false;
+  function load(){ if(busy){ again=true; return; } busy=true;
+    A("/admin/insights").then(function(j){ busy=false; render(j); if(again){ again=false; load(); } }).catch(function(x){ busy=false;
+      host.innerHTML='<div class="grp"><div class="gh"><span>Insights</span></div><p class="hint">'+esc((x&&x.error)||"Could not load insights — is the server running?")+'</p><button class="btn solid" id="insRetry">Try again</button></div>';
+      var r=host.querySelector("#insRetry"); if(r) r.addEventListener("click",load);
+    }); }
+  var es=null, loadT=null;
+  function scheduleLoad(){ if(loadT) return; loadT=setTimeout(function(){ loadT=null; if(document.getElementById("p-insights").classList.contains("on")) load(); }, 500); } /* coalesce push bursts */
+  function openStream(){ if(!window.EventSource||!tok()) return; try{ if(es) es.close(); }catch(e){}
+    es=new EventSource(base+"/api/admin/insights/events?t="+encodeURIComponent(tok()));
+    es.onmessage=scheduleLoad; /* server pings the instant anything changes → refetch once */
+  }
+  load(); openStream();
+  clearInterval(timer); timer=setInterval(function(){ if(document.getElementById("p-insights").classList.contains("on")&&document.visibilityState==="visible") load(); },20000); /* safety-net poll if the stream drops */
+};
+})();
+</script>
+<script src="sfx.js?v=6"></script>
+</body>
+</html>
