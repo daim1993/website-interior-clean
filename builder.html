@@ -120,7 +120,7 @@
   body.v3d-on #cur-ring{opacity:0!important}
   body.v3d-on #cur-dot{z-index:1500;width:6px;height:6px;opacity:.55}
 </style>
-<link rel="stylesheet" href="elevate.css?v=20260704m4">
+<link rel="stylesheet" href="elevate.css?v=20260704m5">
 <script src="dialog.js"></script>
 <script src="motion.js?v=20260704m4" defer></script>
 <meta name="description" content="A browser-based CAD room builder: draw floor plans, furnish rooms, view them in 3D, estimate cost and export DXF, OBJ and PDF.">
@@ -136,10 +136,23 @@
 <body>
 <canvas id="gridfx"></canvas>
 <div id="pfade"></div>
-<header>
+<header class="mobile-site-header builder-site-header">
   <a href="index.html" class="logo"><span class="gtext">ELEVÉ</span></a>
-  <a href="materials.html" class="back" style="margin-left:auto">Materials</a>
-  <a href="index.html" class="back">← Back to site</a>
+  <nav class="mobile-primary-nav mobile-only-nav" aria-label="Primary">
+    <a href="index.html#services">Services</a>
+    <a href="index.html#portfolio">Work</a>
+    <a href="index.html#founder">Founder</a>
+    <a href="index.html#testimonials">Voices</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="materials.html">Materials</a>
+    <a href="builder.html" aria-current="page">Builder</a>
+    <a href="portal.html">Portal</a>
+    <a href="index.html#contact">Contact</a>
+  </nav>
+  <div class="desktop-head-actions">
+    <a href="materials.html" class="back">Materials</a>
+    <a href="index.html" class="back">← Back to site</a>
+  </div>
 </header>
 <div class="layout">
   <aside class="panel glass e-ticks">

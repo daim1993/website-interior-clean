@@ -386,6 +386,127 @@ html.e-settled .e-rule{ transform:scaleX(1); }
   }
 }
 
+/* ---- Shared compact public header for mobile pages ---- */
+.mobile-only-nav{ display:none; }
+.desktop-head-actions{ margin-left:auto; display:flex; align-items:center; gap:.6rem; }
+
+@media(max-width:760px){
+  html.mobile-lite .mobile-site-header{
+    position:sticky !important;
+    top:0 !important;
+    inset:auto 0 auto 0 !important;
+    z-index:90 !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:.58rem !important;
+    width:100% !important;
+    padding:.78rem 1rem .82rem !important;
+    background:rgba(237,239,242,.98) !important;
+    border-bottom:1px solid rgba(23,24,27,.1) !important;
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    box-shadow:none !important;
+  }
+  html.mobile-lite .mobile-site-header > .logo,
+  html.mobile-lite .mobile-site-header > .e-logo{
+    justify-self:start !important;
+    width:auto !important;
+    min-height:36px !important;
+    padding:.42rem .62rem !important;
+    font-size:.68rem !important;
+    letter-spacing:.24em !important;
+    line-height:1 !important;
+  }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:.42rem .45rem !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:visible !important;
+    overscroll-behavior:auto !important;
+    flex-wrap:initial !important;
+    white-space:normal !important;
+    scrollbar-width:auto !important;
+    mask-image:none !important;
+    -webkit-mask-image:none !important;
+  }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:34px !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:.42rem .22rem !important;
+    border:1px solid rgba(23,24,27,.16) !important;
+    background:rgba(255,255,255,.32) !important;
+    color:var(--ink-soft,var(--e-ink-soft,#3c3e44)) !important;
+    font-size:.55rem !important;
+    letter-spacing:.08em !important;
+    line-height:1.05 !important;
+    text-align:center !important;
+    text-transform:uppercase !important;
+    white-space:nowrap !important;
+  }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a:hover,
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a:focus-visible,
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a[aria-current]{
+    color:var(--ink,var(--e-ink,#17181b)) !important;
+    border-color:rgba(23,24,27,.36) !important;
+    outline:none !important;
+  }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a[aria-current]{
+    background:rgba(23,24,27,.06) !important;
+  }
+  html.mobile-lite .mobile-site-header .mobile-only-nav{ display:grid !important; }
+  html.mobile-lite .mobile-site-header .desktop-head-actions{ display:none !important; }
+  html.mobile-lite .mobile-site-header + .mat-wrap{ padding-top:1.65rem !important; }
+  html.mobile-lite .builder-site-header + .layout{ padding-top:1rem !important; }
+  html.mobile-lite .p-hdr.mobile-site-header{
+    grid-template-columns:auto 1fr auto !important;
+    align-items:center !important;
+  }
+  html.mobile-lite .p-hdr.mobile-site-header .sect{
+    grid-column:2 !important;
+    min-width:0 !important;
+    font-size:.5rem !important;
+    letter-spacing:.16em !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+  html.mobile-lite .p-hdr.mobile-site-header .right{
+    grid-column:3 !important;
+    width:auto !important;
+    margin-left:0 !important;
+    justify-self:end !important;
+    gap:0 !important;
+  }
+  html.mobile-lite .p-hdr.mobile-site-header .who{ display:none !important; }
+  html.mobile-lite .p-hdr.mobile-site-header #signOut{
+    width:auto !important;
+    min-height:36px !important;
+    padding:.42rem .56rem !important;
+    font-size:.5rem !important;
+    letter-spacing:.08em !important;
+  }
+  html.mobile-lite .p-hdr.mobile-site-header .mobile-primary-nav{ grid-column:1/-1 !important; }
+}
+
+@media(max-width:340px){
+  html.mobile-lite .mobile-site-header{ padding-inline:.75rem !important; }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav{ gap:.36rem !important; }
+  html.mobile-lite .mobile-site-header .mobile-primary-nav a{
+    font-size:.5rem !important;
+    letter-spacing:.055em !important;
+    padding-inline:.12rem !important;
+  }
+}
+
 /* ---- Skip link ---- */
 .e-skip{ position:fixed; left:1rem; top:-4rem; z-index:2000; background:var(--e-ink); color:#fff;
   font:500 .78rem/1 "Inter",sans-serif; letter-spacing:.08em; padding:.8rem 1.1rem; text-decoration:none;
