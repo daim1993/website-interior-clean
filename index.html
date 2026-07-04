@@ -301,6 +301,96 @@
   }
 </style>
 <link rel="stylesheet" href="elevate.css?v=20260704m4">
+<style>
+  @media(max-width:760px){
+    html.mobile-lite #hdr{
+      position:sticky!important;
+      top:0;
+      padding:0!important;
+      background:rgba(237,239,242,.98)!important;
+      border-bottom:1px solid rgba(23,24,27,.1);
+    }
+    html.mobile-lite #hdr nav{
+      display:grid!important;
+      grid-template-columns:1fr;
+      gap:.58rem!important;
+      width:100%;
+      max-width:none;
+      margin:0;
+      padding:.78rem 1rem .82rem!important;
+      overflow:visible!important;
+      flex-wrap:wrap!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      border:0!important;
+    }
+    html.mobile-lite #hdr nav .logo{
+      justify-self:start;
+      width:auto!important;
+      min-height:36px!important;
+      padding:.42rem .62rem!important;
+      font-size:.68rem!important;
+      letter-spacing:.24em!important;
+    }
+    html.mobile-lite #hdr .nav-links{
+      display:grid!important;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:.42rem .45rem;
+      width:100%;
+      min-width:0;
+      padding:0;
+      margin:0;
+      list-style:none;
+      overflow:visible;
+    }
+    html.mobile-lite #hdr .nav-links li{ min-width:0; }
+    html.mobile-lite #hdr .nav-links a{
+      width:100%;
+      min-height:34px!important;
+      display:inline-flex!important;
+      align-items:center;
+      justify-content:center;
+      padding:.42rem .22rem!important;
+      border:1px solid rgba(23,24,27,.16);
+      background:rgba(255,255,255,.32);
+      color:var(--ink-soft);
+      font-size:.55rem!important;
+      letter-spacing:.08em!important;
+      line-height:1.05;
+      text-align:center;
+      white-space:nowrap;
+    }
+    html.mobile-lite #hdr .nav-links a:hover,
+    html.mobile-lite #hdr .nav-links a:focus-visible{
+      color:var(--ink);
+      border-color:rgba(23,24,27,.36);
+      outline:none;
+    }
+    html.mobile-lite #hdr .nav-cta{ display:none!important; }
+    html.mobile-lite #sfxBtn{
+      top:.9rem!important;
+      right:1rem!important;
+      bottom:auto!important;
+      left:auto!important;
+      background:rgba(237,239,242,.96)!important;
+      z-index:1002!important;
+    }
+    html.mobile-lite #eleve-chrome{ display:none!important; }
+    html.mobile-lite .hero{
+      padding-top:1.4rem!important;
+    }
+  }
+  @media(max-width:340px){
+    html.mobile-lite #hdr nav{ padding-inline:.75rem!important; }
+    html.mobile-lite #hdr .nav-links{ gap:.36rem; }
+    html.mobile-lite #hdr .nav-links a{
+      font-size:.5rem!important;
+      letter-spacing:.055em!important;
+      padding-inline:.12rem!important;
+    }
+  }
+</style>
 <meta name="description" content="An elegant, minimalist design studio shaping residential and commercial spaces. Explore projects, a materials library and a live room builder.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Elevé — Interior, Architecture & Exterior Design Studio">
