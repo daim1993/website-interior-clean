@@ -96,4 +96,29 @@
     box.style.cssText="max-width:440px;background:#f6f7f9;border:1px solid #17181b;padding:1.8rem;font:400 .9rem Inter,system-ui,sans-serif;color:#17181b;box-shadow:10px 10px 0 rgba(23,24,27,.12)";
     box.innerHTML="<p style=\"font-family:'Playfair Display',serif;font-size:1.4rem;margin:0 0 .2rem\">Welcome to the room builder</p>"+
       "<p style=\"color:#6b6f76;margin:0 0 1rem;font-size:.85rem\">A 60-second orientation:</p>"+
-      "<ul style=\"margin:0 0 1.2rem;padding-left:1.1rem;line-height:1.7;font-size:.8
+      "<ul style=\"margin:0 0 1.2rem;padding-left:1.1rem;line-height:1.7;font-size:.86rem\">"+
+      "<li><b>Draw a room</b> - press <b>R</b>oom tool and drag on the sheet.</li>"+
+      "<li><b>Add furniture</b> - pick a category, click an item; drag to place, <b>R</b> to rotate.</li>"+
+      "<li><b>Door / Window / Opening</b> - press D / W, then click a wall.</li>"+
+      "<li><b>See it in 3D</b> - the 3D view button; right-drag moves the light.</li>"+
+      "<li><b>Save</b> - Cloud save keeps versions; work also autosaves locally.</li>"+
+      "<li><b>Export</b> - PDF spec, DXF (CAD) or OBJ (3D).</li></ul>"+
+      "<button id=\"obGo\" style=\"font:inherit;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.1rem;border:1px solid #17181b;background:#17181b;color:#fff;cursor:pointer\">Start designing</button>";
+    ov.appendChild(box); document.body.appendChild(ov);
+    function done(){ try{localStorage.setItem("eleve_onboarded","1");}catch(e){} ov.remove(); }
+    box.querySelector("#obGo").addEventListener("click",done);
+    ov.addEventListener("click",function(e){ if(e.target===ov) done(); });
+  }
+  function wire(){
+    var s=document.getElementById("cloudSave"), m=document.getElementById("myProjects"), sh=document.getElementById("shareProj");
+    if(s)s.addEventListener("click",cloudSave); if(m)m.addEventListener("click",myProjects); if(sh)sh.addEventListener("click",shareProj);
+    var hb=document.createElement("button"); hb.textContent="? Tips";
+    hb.style.cssText="position:fixed;left:1.2rem;bottom:1.1rem;z-index:1401;font:500 .72rem Inter,system-ui,sans-serif;letter-spacing:.06em;padding:.5rem .7rem;border:1px solid #17181b;background:rgba(255,255,255,.7);color:#17181b;cursor:pointer";
+    hb.addEventListener("click",function(){ onboard(); });
+    document.body.appendChild(hb);
+    var q=null; try{ q=new URLSearchParams(location.search).get("share"); }catch(e){}
+    if(q){ api("/shared/"+q,"GET").then(function(r){return r.ok?r.json():null;}).then(function(j){ if(j&&j.data&&B()){ B().load(j.data); toast("Viewing shared plan: "+(j.name||"")); } }).catch(function(){}); }
+    else { var seen=null; try{seen=localStorage.getItem("eleve_onboarded");}catch(e){} if(!seen) setTimeout(onboard,600); offerRecovery(); }
+  }
+  if(document.readyState!=="loading") wire(); else document.addEventListener("DOMContentLoaded",wire);
+})();

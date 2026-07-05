@@ -882,4 +882,26 @@ app.use((req,res,next)=>{
 app.use(express.static(SITE, { extensions:["html"], setHeaders:function(res,fp){
   if(/\.(js|css|mp3|wav|glb|svg|png|jpg|jpeg|webp|woff2?)$/i.test(fp)) res.setHeader("Cache-Control","public, max-age=604800");
   else if(/\.html$/i.test(fp)) res.setHeader("Cache-Control","no-cache");
-}, dotfiles:"
+}, dotfiles:"ignore" }));
+app.use((req,res)=>{ res.status(404); if(req.accepts("html")) return res.sendFile(path.join(SITE,"404.html"),err=>{ if(err) res.send("Not found"); }); res.json({error:"Not found"}); });
+
+app.ready = pgInit();          // resolves immediately when DATABASE_URL is not set
+app.ready.catch(()=>{});       // avoid unhandled-rejection kill when used as a module; main mode handles it below
+if (require.main === module) {
+  app.ready.then(()=>{
+  backup(); const backupTimer=setInterval(backup, BACKUP_INTERVAL_MS); if(backupTimer.unref) backupTimer.unref();
+  ["SIGTERM","SIGINT"].forEach(sig=>process.on(sig, ()=>{  // flush pending writes on shutdown (deploys, spin-down)
+    try{ clearTimeout(saveT); writeDbNow(); }catch(e){}
+    Promise.resolve(pgFlush()).catch(()=>{}).then(()=>process.exit(0));
+  }));
+  const onListen=()=>{
+    console.log("Elevé server \u2192 http://"+(HOST||"0.0.0.0")+":"+PORT);
+    console.log("Admin password: "+(process.env.ADMIN_PASSWORD?"(env)":"eleve-admin (default \u2014 change it)"));
+    console.log("Persistence: "+(PG_URL?"Postgres (DATABASE_URL)":"local JSON file (dev)"));
+    console.log("Billing: "+(STRIPE_KEY?"Stripe key present":"not configured (set STRIPE_SECRET)"));
+  };
+  if(HOST) app.listen(PORT, HOST, onListen);
+  else app.listen(PORT, onListen);
+  }).catch(e=>{ console.error("FATAL: could not reach Postgres (DATABASE_URL): "+e.message); process.exit(1); });
+}
+module.exports = app;

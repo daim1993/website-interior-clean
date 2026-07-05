@@ -776,7 +776,7 @@ node server.js</div>Tell me and I'll bake these into your launcher / deploy conf
     if(onDel){ var db=document.createElement("button"); db.className="del"; db.textContent="Delete"; db.addEventListener("click",onDel); gh.appendChild(db); }
     g.appendChild(gh);
     var gb=document.createElement("div");
-    gb.appendChild(textField("Name","text","Material name",function(){return store.name;},function(v){store.name=v; sp.textContent=sp.textContent.replace(/·.*$/,"· "+(v||"New material"));}));
+    gb.appendChild(textField("Name","text","Material name",function(){return store.name;},function(v){store.name=v;}));
     gb.appendChild(textField("Description","area","Short description…",function(){return store.desc;},function(v){store.desc=v;}));
     gb.appendChild(imageField("Photo","Shown as the swatch image.",function(){return store.img;},function(v){ if(v)store.img=v; else delete store.img; }));
     foldify(g,gh,gb,swOpen,store);
@@ -1731,4 +1731,275 @@ window.__portalDesk=function(host){
 window.__accountsDesk=function(host){
   var ROLES=[["user","Client"],["designer","Designer"],["editor","Editor"],["admin","Admin"]];
   function fmtD(t){ return t?new Date(t).toLocaleDateString():"—"; }
-  function c
+  function changed(){ try{ document.dispatchEvent(new CustomEvent("eleve:accounts-changed")); }catch(e){} }
+  function load(){
+    A("/admin/users").then(function(j){ render(j.users||[]); })
+    .catch(function(x){
+      var authish=x&&(x.cancel||x.error);
+      var msg=(x&&x.cancel)?"Admin sign-in is required to manage accounts."
+            :(x&&x.error)?x.error
+            :(x&&x.message)?("Page error: "+x.message)
+            :"Could not reach the studio server — make sure the Start-Eleve window is open (or run: cd server && npm start).";
+      host.innerHTML='<div class="grp"><div class="gh"><span>Accounts</span></div>'+
+        '<p class="hint" style="margin:0 0 .9rem">'+esc(msg)+'</p>'+
+        '<button class="btn solid" id="accRetry">'+(authish?"Sign in as admin":"Try again")+'</button>'+
+        (authish?'<p class="hint" style="margin-top:.6rem">The admin password is the studio master password (default: eleve-admin) — not a portal account password.</p>':"")+
+        '</div>';
+      host.querySelector("#accRetry").addEventListener("click",function(){
+        host.innerHTML='<p class="hint">One moment…</p>'; load();
+      });
+    });
+  }
+  function render(users){
+    var admins=users.filter(function(u){return u.role==="admin";}).length;
+    host.innerHTML=
+      (canDo("accounts","create")?
+      '<div class="grp"><div class="gh"><span>Create an account</span></div>'+
+        '<div class="irow" style="grid-template-columns:1.6fr 1.2fr .9fr auto;border-bottom:none;margin:0;padding:0">'+
+          '<div><span class="mini">Email</span><input type="text" id="accEmail" placeholder="client@email.com"></div>'+
+          '<div><span class="mini">Password — 6+ chars</span><input type="text" id="accPass" placeholder="••••••"></div>'+
+          '<div><span class="mini">Role</span>'+selHtml("user",ROLES).replace("<select>",'<select id="accRole">')+'</div>'+
+          '<button class="btn solid" id="accGo" style="height:34px">Create</button>'+
+        '</div>'+
+        '<p class="hint" style="margin-top:.5rem">Roles — <b>Client</b>: signs in at portal.html, sees only their project. <b>Designer</b>: opens the Client Portals desk, publishes sections and replies to clients. <b>Editor</b>: edits and publishes the public website. <b>Admin</b>: everything, including this Accounts desk. For editors and designers you can fine-tune the exact privileges (view / add / edit / delete…) on each account below.</p></div>':"")+
+      '<div class="grp"><div class="gh"><span>Accounts · '+users.length+'</span><span style="letter-spacing:.1em">'+admins+' admin'+(admins===1?"":"s")+'</span></div><div id="accList"></div></div>';
+    var listEl=host.querySelector("#accList");
+    users.forEach(function(u){
+      var canEdit=canDo("accounts","edit"), canDel=canDo("accounts","delete");
+      var row=el('<div class="irow" style="grid-template-columns:1.6fr .9fr 1.1fr auto auto auto">'+
+        '<div><span class="mini">Email</span>'+inp(u.email)+'</div>'+
+        '<div><span class="mini">Role</span>'+selHtml(u.role,ROLES)+'</div>'+
+        '<div><span class="mini">Created · activity</span><span class="mono" style="font-size:.66rem;color:var(--soft);display:block;padding:.55rem 0">'+fmtD(u.createdAt)+(u.project?(" · "+esc(u.project)):" · no project")+(u.msgs?(" · "+u.msgs+" msgs"):"")+'</span></div>'+
+        (canEdit?'<button class="btn" data-a="save" title="Save email, role &amp; privileges">Save</button>'+
+                 '<button class="btn" data-a="pass" title="Set a new password">Password</button>':"")+
+        (canDel?'<button class="del" data-a="del" title="Delete this account">✕</button>':"")+
+      '</div>');
+      var emailIn=row.querySelector("input"), roleSel=row.querySelector("select");
+      if(!canEdit){ emailIn.disabled=true; roleSel.disabled=true; }
+      listEl.appendChild(row);
+      /* per-user privileges — the fine-grained switches for editors & designers */
+      var privEl=null;
+      if((u.role==="editor"||u.role==="designer")&&canEdit){
+        var P=u.can||{};
+        var grp2=function(label,area,keys){
+          return '<div class="priv-row"><span class="priv-area">'+label+'</span>'+
+            keys.map(function(kk){ var on=P[area]&&P[area][kk[0]];
+              return '<label class="priv-opt"><input type="checkbox" data-pa="'+area+'" data-pk="'+kk[0]+'"'+(on?" checked":"")+'> '+kk[1]+'</label>'; }).join("")+
+          '</div>';
+        };
+        privEl=el('<div class="priv-card">'+
+          '<span class="mini" style="display:block;margin-bottom:.5rem">Privileges — '+esc(u.email)+'</span>'+
+          grp2("Website","site",[["view","view"],["publish","publish"]])+
+          grp2("Client portals","portal",[["view","view"],["edit","add / edit"],["reply","reply"],["reset","reset / delete"]])+
+          grp2("Accounts","accounts",[["view","view"],["create","add"],["edit","edit"],["delete","delete"]])+
+          '<p class="hint" style="margin:.55rem 0 0">Tick what they may do, then press Save on their row. Changing the role resets these to the role\'s defaults.</p>'+
+        '</div>');
+        listEl.appendChild(privEl);
+      }
+      var bs=row.querySelector('[data-a=save]');
+      if(bs) bs.addEventListener("click",function(){
+        var newRole=roleSel.value;
+        var body={email:emailIn.value.trim(),role:newRole};
+        if(privEl&&newRole===u.role){ var perms={};
+          Array.prototype.forEach.call(privEl.querySelectorAll("input[type=checkbox]"),function(cb){
+            var a=cb.getAttribute("data-pa"),k=cb.getAttribute("data-pk");
+            (perms[a]=perms[a]||{})[k]=cb.checked;
+          });
+          body.perms=perms;
+        }
+        var go=function(){ A("/admin/users/"+u.id,"PUT",body).then(function(){
+            eleveUI.toast("Account updated ✓"); changed(); load();
+          }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not update.",{title:"Accounts"}); }); };
+        if(newRole==="admin"&&u.role!=="admin")
+          eleveUI.confirm("Make “"+(emailIn.value.trim()||u.email)+"” an admin? Admins can open this CMS, every client portal, and manage accounts — privileges can't restrict them.",{title:"Grant admin",ok:"Make admin"}).then(function(okc){ if(okc) go(); });
+        else go();
+      });
+      var bp=row.querySelector('[data-a=pass]');
+      if(bp) bp.addEventListener("click",function(){
+        eleveUI.prompt("New password for "+u.email+" (6+ characters)",{title:"Set password",type:"password",ok:"Save password"}).then(function(pw){
+          if(pw==null||pw==="") return;
+          if(pw.length<6) return eleveUI.alert("Password must be at least 6 characters.",{title:"Set password"});
+          A("/admin/users/"+u.id,"PUT",{password:pw}).then(function(){ eleveUI.toast("Password updated ✓ — their old sessions are signed out"); })
+          .catch(function(x){ eleveUI.alert((x&&x.error)||"Could not update.",{title:"Set password"}); });
+        });
+      });
+      var bd=row.querySelector('[data-a=del]');
+      if(bd) bd.addEventListener("click",function(){
+        eleveUI.confirm("Delete “"+u.email+"” permanently? Their portal content and builder projects are removed too. This cannot be undone.",{title:"Delete account",ok:"Delete"}).then(function(okc){
+          if(!okc) return;
+          A("/admin/users/"+u.id,"DELETE").then(function(){ eleveUI.toast("Account deleted"); changed(); load(); })
+          .catch(function(x){ eleveUI.alert((x&&x.error)||"Could not delete.",{title:"Delete account"}); });
+        });
+      });
+    });
+    var goBtn=host.querySelector("#accGo");
+    if(goBtn) goBtn.addEventListener("click",function(){
+      var em=host.querySelector("#accEmail").value.trim(), pw=host.querySelector("#accPass").value, rl=host.querySelector("#accRole").value;
+      if(!/.+@.+\..+/.test(em)) return eleveUI.alert("Enter a valid email address.",{title:"Create account"});
+      if(!pw||pw.length<6) return eleveUI.alert("Password must be at least 6 characters.",{title:"Create account"});
+      A("/admin/users","POST",{email:em,password:pw,role:rl}).then(function(){
+        eleveUI.toast("Account created ✓"); changed(); load();
+      }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not create the account.",{title:"Create account"}); });
+    });
+  }
+  load();
+};
+
+/* ═══ INSIGHTS DESK — admin live dashboard ═══ */
+/* ----- Requests desk — contact-form messages + consultation bookings from the main site ----- */
+window.__requestsDesk=function(host){
+  var data=null;
+  function fmt(t){ return new Date(t).toLocaleString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+  function load(){
+    host.innerHTML='<p class="hint">Loading…</p>';
+    A("/admin/inbox").then(function(j){ data=j; render(); })
+      .catch(function(x){ host.innerHTML='<p class="hint">'+esc((x&&x.error)||"Could not load requests.")+'</p>'; });
+  }
+  function render(){
+    var msgs=data.messages||[], cons=data.consults||[], subs=data.subscribers||[];
+    var unread=msgs.filter(function(m){return !m.read;}).length;
+    host.innerHTML=
+      '<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">'+
+        '<span class="mono" style="font-size:.66rem;color:var(--soft)">'+msgs.length+' message'+(msgs.length===1?"":"s")+(unread?' · <b style="color:var(--ink)">'+unread+' unread</b>':"")+' · '+cons.length+' consultation'+(cons.length===1?"":"s")+' · '+subs.length+' subscriber'+(subs.length===1?"":"s")+'</span>'+
+        '<button class="btn" id="reqRefresh" style="margin-left:auto">Refresh</button>'+
+      '</div>'+
+      '<div class="grp"><p class="mini" style="margin:.2rem 0 .4rem">Contact messages — from the form at the bottom of the home page</p><div id="reqMsgs"></div></div>'+
+      '<div class="grp" style="margin-top:1.2rem"><p class="mini" style="margin:.2rem 0 .4rem">Consultation bookings — from book.html</p><div id="reqCons"></div></div>'+
+      '<div class="grp" style="margin-top:1.2rem"><div style="display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap"><p class="mini" style="margin:.2rem 0 .4rem">Newsletter subscribers</p>'+
+        (subs.length?'<button class="btn" id="reqCopySubs" style="font-size:.56rem;height:28px;margin-left:auto">Copy all emails</button>':"")+'</div><div id="reqSubs"></div></div>';
+    var hm=document.getElementById("reqMsgs");
+    hm.innerHTML=msgs.length?msgs.map(function(m){
+      return '<div class="box" style="margin:.5rem 0;padding:.9rem 1rem'+(m.read?";opacity:.62":"")+'">'+
+        '<div style="display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap">'+
+          '<b>'+esc(m.name)+'</b><a class="mono" style="font-size:.66rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(m.email)+'">'+esc(m.email)+'</a>'+
+          '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">'+fmt(m.t)+(m.read?" · read":" · new")+'</span></div>'+
+        '<p style="margin:.45rem 0 .6rem;font-size:.85rem;line-height:1.6;white-space:pre-wrap">'+esc(m.message)+'</p>'+
+        '<button class="btn" data-read="'+esc(m.id)+'" style="font-size:.56rem;height:28px">'+(m.read?"Mark unread":"Mark read")+'</button> '+
+        '<button class="btn" data-del-msg="'+esc(m.id)+'" style="font-size:.56rem;height:28px">Delete</button>'+
+      '</div>'; }).join(""):'<p class="hint">No contact messages yet.</p>';
+    var hc=document.getElementById("reqCons");
+    hc.innerHTML=cons.length?cons.map(function(c){
+      return '<div class="box" style="margin:.5rem 0;padding:.9rem 1rem">'+
+        '<div style="display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap">'+
+          '<b>'+esc(c.name)+'</b><a class="mono" style="font-size:.66rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>'+
+          '<span class="mono" style="font-size:.66rem">'+esc(c.date)+(c.time?(" · "+esc(c.time)):"")+'</span>'+
+          '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">asked '+fmt(c.t)+'</span></div>'+
+        (c.note?'<p style="margin:.45rem 0 .6rem;font-size:.85rem;line-height:1.6;white-space:pre-wrap">'+esc(c.note)+'</p>':"")+
+        '<button class="btn" data-del-con="'+esc(c.id)+'" style="font-size:.56rem;height:28px;margin-top:.3rem">Delete</button>'+
+      '</div>'; }).join(""):'<p class="hint">No consultation bookings yet.</p>';
+    var hs=document.getElementById("reqSubs");
+    hs.innerHTML=subs.length?subs.slice().sort(function(a,b){return (b.t||0)-(a.t||0);}).map(function(s){
+      return '<div style="display:flex;align-items:baseline;gap:.8rem;padding:.45rem 0;border-top:1px dotted var(--line);flex-wrap:wrap">'+
+        '<a class="mono" style="font-size:.7rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(s.email)+'">'+esc(s.email)+'</a>'+
+        '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">'+(s.t?fmt(s.t):"")+'</span>'+
+        '<button class="btn" data-del-sub="'+esc(s.email)+'" style="font-size:.52rem;height:24px">Remove</button>'+
+      '</div>'; }).join(""):'<p class="hint">No subscribers yet — emails from the newsletter box land here.</p>';
+    var cp=document.getElementById("reqCopySubs");
+    if(cp) cp.addEventListener("click",function(){
+      var all=subs.map(function(s){return s.email;}).join(", ");
+      (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(all):Promise.reject())
+        .then(function(){ eleveUI.toast("Copied "+subs.length+" email"+(subs.length===1?"":"s")+" ✓"); })
+        .catch(function(){ window.prompt("Copy the list:",all); });
+    });
+    host.querySelectorAll("[data-del-sub]").forEach(function(b){ b.addEventListener("click",function(){
+      var em=b.getAttribute("data-del-sub");
+      eleveUI.confirm("Remove "+em+" from the subscriber list?",{title:"Requests",ok:"Remove"}).then(function(ok){
+        if(!ok) return;
+        A("/admin/inbox/delete","POST",{kind:"subscriber",id:em}).then(function(){
+          data.subscribers=(data.subscribers||[]).filter(function(x){return x.email!==em;}); render();
+        }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not remove.",{title:"Requests"}); });
+      });
+    }); });
+    document.getElementById("reqRefresh").addEventListener("click",load);
+    host.querySelectorAll("[data-read]").forEach(function(b){ b.addEventListener("click",function(){
+      var m=(data.messages||[]).find(function(x){return x.id===b.getAttribute("data-read");}); if(!m) return;
+      A("/admin/inbox/read","POST",{id:m.id,read:!m.read}).then(function(){ m.read=!m.read; render(); })
+        .catch(function(x){ eleveUI.alert((x&&x.error)||"Could not update.",{title:"Requests"}); });
+    }); });
+    function bindDel(sel,kind,list){ host.querySelectorAll(sel).forEach(function(b){ b.addEventListener("click",function(){
+      var id=b.getAttribute(kind==="message"?"data-del-msg":"data-del-con");
+      eleveUI.confirm("Delete this "+(kind==="message"?"message":"booking")+" permanently?",{title:"Requests",ok:"Delete"}).then(function(ok){
+        if(!ok) return;
+        A("/admin/inbox/delete","POST",{kind:kind,id:id}).then(function(){
+          data[list]=(data[list]||[]).filter(function(x){return x.id!==id;}); render();
+        }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not delete.",{title:"Requests"}); });
+      });
+    }); }); }
+    bindDel("[data-del-msg]","message","messages");
+    bindDel("[data-del-con]","consult","consults");
+  }
+  load();
+};
+window.__insightsDesk=function(host){
+  var timer=null;
+  function fmtT(t){ return new Date(t).toLocaleString(); }
+  function bars(obj,limit){ var ents=Object.keys(obj).map(function(k){return [k,obj[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,limit||8);
+    var max=ents.reduce(function(m,e){return Math.max(m,e[1]);},1);
+    return ents.length? ents.map(function(e){ return '<div class="ins-bar"><span class="l" title="'+esc(e[0])+'">'+esc(e[0])+'</span><span class="track"><span class="fill" style="width:'+Math.max(3,Math.round(e[1]/max*100))+'%"></span></span><span class="n">'+e[1]+'</span></div>'; }).join("")
+      : '<p class="hint" style="margin:0">No data yet.</p>'; }
+  var EVLABEL={ "register-bootstrap":"Admin bootstrapped","admin-user-create":"Account created","admin-user-edit":"Account edited","admin-user-delete":"Account deleted","portal-admin-edit":"Portal section published","portal-reply":"Replied to client","portal-seed":"Published showcase","portal-reset":"Reset workspace","content-publish":"Website published","login-fail":"Failed sign-in","contact":"Contact enquiry","consult":"Consultation booked","subscribe":"Newsletter sign-up","clienterror":"Client-side error" };
+  function evText(e){ var label=EVLABEL[e.ev]||e.ev||"event";
+    var who=e.by?('<b>'+esc(e.by)+'</b> '):"";
+    var det=[]; if(e.email&&e.email!==e.by) det.push(esc(e.email)); if(e.client) det.push(esc(e.client)); if(e.section) det.push(esc(e.section)); if(e.role) det.push(esc(e.role)); if(e.changed) det.push(esc(e.changed)); if(e.msg) det.push(esc(String(e.msg).slice(0,80)));
+    return who+label+(det.length?(" — "+det.join(" · ")):""); }
+  function stat(n,label){ return '<div class="ins-stat"><b>'+n+'</b><span>'+label+'</span></div>'; }
+  function liveStat(n,label,accent){ return '<div class="ins-live'+(accent?" on":"")+'"><b>'+n+'</b><span>'+label+'</span></div>'; }
+  function render(j){
+    var L=j.live||{}, T=j.totals||{}, AN=j.analytics||{};
+    var days=Object.keys(AN.perDay||{}).sort();
+    var dmax=days.reduce(function(m,d){return Math.max(m,AN.perDay[d]);},1);
+    var spark=days.length? '<div class="ins-spark">'+days.map(function(d){ var h=Math.max(4,Math.round(AN.perDay[d]/dmax*46)); return '<span class="col" title="'+d+' · '+AN.perDay[d]+'"><span style="height:'+h+'px"></span><em>'+d.slice(5)+'</em></span>'; }).join("")+'</div>' : '<p class="hint" style="margin:0">No visits recorded in the last 7 days yet.</p>';
+    var actHtml=(j.activity||[]).length? j.activity.map(function(a){
+      return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(a.t)+'</span><span class="b'+(a.by==="studio"?" s":"")+'">'+esc(a.by)+'</span><span style="flex:1">'+(a.who?('<b>'+esc(a.who)+'</b> — '):"")+esc(a.text)+'</span><span class="mono" style="font-size:.56rem;color:var(--muted)">'+esc(a.client||"")+'</span></div>';
+    }).join("") : '<p class="hint" style="margin:0">No client activity yet.</p>';
+    var evHtml=(j.events||[]).length? j.events.map(function(e){
+      return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(e.t)+'</span><span>'+evText(e)+'</span></div>';
+    }).join("") : '<p class="hint" style="margin:0">No server events yet.</p>';
+    var enq=(j.enquiries&&j.enquiries.messages)||[], cons=(j.enquiries&&j.enquiries.consults)||[];
+    var enqHtml=(enq.length||cons.length)?
+      (enq.map(function(m){ return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(m.t)+'</span><span class="b">enquiry</span><span style="flex:1">'+esc(m.name||"")+' &lt;'+esc(m.email||"")+'&gt; — '+esc(String(m.message||"").slice(0,90))+'</span></div>'; }).join("")
+       + cons.map(function(c){ return '<div class="pd-act"><span class="t" style="width:8.5rem">'+fmtT(c.t)+'</span><span class="b s">booking</span><span style="flex:1">'+esc(c.name||"")+' — '+esc(c.date||"")+' '+esc(c.time||"")+'</span></div>'; }).join(""))
+      : '<p class="hint" style="margin:0">No enquiries or bookings yet.</p>';
+    host.innerHTML=
+      '<div class="grp"><div class="gh"><span>Live now</span><span class="pd-status" id="insClock"></span></div>'+
+        '<div class="ins-liverow">'+
+          liveStat(L.site||0,"Visitors on site",(L.site>0))+
+          liveStat(L.builder||0,"Using the builder",(L.builder>0))+
+          liveStat(L.portal||0,"Clients in portal",(L.portal>0))+
+          liveStat(L.cms||0,"Studio in CMS",(L.cms>0))+
+        '</div><p class="hint" style="margin:.6rem 0 0">Anonymous, updates every few seconds. Someone counts as “now” if active in the last minute.</p></div>'+
+      '<div class="grp"><div class="gh"><span>Totals</span></div><div class="ins-stats">'+
+        stat(T.clients||0,"Clients")+stat(T.staff||0,"Staff")+stat(T.builderProjects||0,"Builder projects")+stat(T.portals||0,"Active portals")+
+        stat(T.pendingApprovals||0,"Approvals pending")+stat(T.openComments||0,"Comments")+stat(T.subscribers||0,"Subscribers")+stat((T.messages||0)+(T.consults||0),"Enquiries")+
+      '</div></div>'+
+      '<div class="grid2c" style="gap:1.1rem">'+
+        '<div class="grp"><div class="gh"><span>Visits · last 7 days</span><span>'+(AN.total||0)+' events</span></div>'+spark+'</div>'+
+        '<div class="grp"><div class="gh"><span>Top pages</span></div>'+bars(AN.pageviews||{},7)+'</div>'+
+      '</div>'+
+      '<div class="grp"><div class="gh"><span>All activity · every portal</span></div><div class="ins-scroll">'+actHtml+'</div></div>'+
+      '<div class="grid2c" style="gap:1.1rem">'+
+        '<div class="grp"><div class="gh"><span>Server events &amp; sign-ins</span></div><div class="ins-scroll">'+evHtml+'</div></div>'+
+        '<div class="grp"><div class="gh"><span>Enquiries &amp; bookings</span></div><div class="ins-scroll">'+enqHtml+'</div></div>'+
+      '</div>';
+    var clk=document.getElementById("insClock"); if(clk) clk.textContent="updated "+new Date().toLocaleTimeString();
+  }
+  var busy=false, again=false;
+  function load(){ if(busy){ again=true; return; } busy=true;
+    A("/admin/insights").then(function(j){ busy=false; render(j); if(again){ again=false; load(); } }).catch(function(x){ busy=false;
+      host.innerHTML='<div class="grp"><div class="gh"><span>Insights</span></div><p class="hint">'+esc((x&&x.error)||"Could not load insights — is the server running?")+'</p><button class="btn solid" id="insRetry">Try again</button></div>';
+      var r=host.querySelector("#insRetry"); if(r) r.addEventListener("click",load);
+    }); }
+  var es=null, loadT=null;
+  function scheduleLoad(){ if(loadT) return; loadT=setTimeout(function(){ loadT=null; if(document.getElementById("p-insights").classList.contains("on")) load(); }, 500); } /* coalesce push bursts */
+  function openStream(){ if(!window.EventSource||!tok()) return; try{ if(es) es.close(); }catch(e){}
+    es=new EventSource(base+"/api/admin/insights/events?t="+encodeURIComponent(tok()));
+    es.onmessage=scheduleLoad; /* server pings the instant anything changes → refetch once */
+  }
+  load(); openStream();
+  clearInterval(timer); timer=setInterval(function(){ if(document.getElementById("p-insights").classList.contains("on")&&document.visibilityState==="visible") load(); },20000); /* safety-net poll if the stream drops */
+};
+})();
+</script>
+<script src="sfx.js?v=6"></script>
+</body>
+</html>

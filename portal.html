@@ -763,4 +763,26 @@ function renderSched(){
   var KIND={phase:"Phase",site:"Site visit",delivery:"Delivery",install:"Installation"};
   var items=P.schedule.slice().sort(function(a,b){return a.date-b.date;}).map(function(s){
     return '<div class="tli '+cls(s.status)+'"><span class="mark"></span>'+
-      '<p class="d" style="margin:0">'+fmtDY(s.date)+' · '+(KIND[s.kind]||s.kind)+(s.status==="next"?" — next":""
+      '<p class="d" style="margin:0">'+fmtDY(s.date)+' · '+(KIND[s.kind]||s.kind)+(s.status==="next"?" — next":"")+'</p>'+
+      '<p class="t" style="margin:0">'+esc(s.title)+'</p></div>';
+  }).join("");
+  document.getElementById("p-sched").innerHTML=
+    '<div class="ph"><p class="kick">08 — Schedule &amp; milestones</p><h2>The road to the <em>reveal</em></h2>'+
+    '<p class="sub">Phases, site visits, deliveries and the installation week — the whole engagement on one line.</p></div>'+
+    '<div class="card tick"><div class="tl">'+items+'</div></div>';
+}
+
+function renderAll(){
+  renderDash(); renderMood(); renderRend(); renderAppr(); renderMat(); renderBudg(); renderMsg(); renderSched();
+  var pend=P.approvals.filter(function(a){return a.status==="pending";}).length;
+  document.getElementById("bAppr").textContent=pend||""; document.getElementById("bAppr").style.display=pend?"":"none";
+  var liked=Object.keys(P.reactions).length;
+  document.getElementById("bMood").textContent=liked||""; document.getElementById("bMood").style.display=liked?"":"none";
+}
+
+boot();
+})();
+</script>
+<script src="sfx.js?v=6"></script>
+<script src="site.js"></script>
+</body></html>
