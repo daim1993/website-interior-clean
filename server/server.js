@@ -401,6 +401,18 @@ app.post("/api/consult",(req,res)=>{ var b=req.body||{};
   res.json({ ok:true }); });
 app.get("/api/admin/inbox",(req,res)=>{ const u=can(req,res,"site","view"); if(!u) return;
   res.json({ messages:db.messages||[], consults:db.consults||[], subscribers:db.subscribers||[] }); });
+app.post("/api/admin/inbox/read",(req,res)=>{ const u=can(req,res,"site","view"); if(!u) return;
+  const { id, read }=req.body||{};
+  const m=(db.messages||[]).find(x=>x.id===id); if(!m) return res.status(404).json({error:"Message not found"});
+  m.read=!!read; persist(); res.json({ ok:true }); });
+app.post("/api/admin/inbox/delete",(req,res)=>{ const u=can(req,res,"site","view"); if(!u) return;
+  const { kind, id }=req.body||{};
+  if(kind==="message"){ const n=(db.messages||[]).length; db.messages=(db.messages||[]).filter(x=>x.id!==id);
+    if(db.messages.length===n) return res.status(404).json({error:"Message not found"}); }
+  else if(kind==="consult"){ const n=(db.consults||[]).length; db.consults=(db.consults||[]).filter(x=>x.id!==id);
+    if(db.consults.length===n) return res.status(404).json({error:"Booking not found"}); }
+  else return res.status(400).json({error:"Unknown kind"});
+  persist(); logline({ev:"inbox-delete",by:u.email||"admin",kind}); res.json({ ok:true }); });
 
 /* ---------- CLIENT PORTAL (production) ----------
    Each client owns an ISOLATED database file: server/portals/<uid>.json
