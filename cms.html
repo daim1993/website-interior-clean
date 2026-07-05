@@ -661,49 +661,64 @@ node server.js</div>Tell me and I'll bake these into your launcher / deploy conf
   homeText.forEach(function(fld){ pHome.appendChild(textField(fld[1],fld[2],fld[3],function(){return d.text[fld[0]];},function(v){d.text[fld[0]]=v;})); });
   panels.appendChild(pHome);
 
-  /* Gallery */
+  /* Gallery — book designer (shelf of books; each book has cover + pages of text/image/video) */
+  d.galleryBooks=d.galleryBooks||[];
   var pGal=document.createElement("div"); pGal.className="panel"; pGal.id="p-gallery";
-  pGal.innerHTML='<h2>The <em>gallery</em></h2><p class="sub">gallery.html — intro and projects.</p>';
-  pGal.appendChild(textField("Gallery intro","area","A walk through recent projects…",function(){return d.text.gallery_intro;},function(v){d.text.gallery_intro=v;}));
-  var projWrap=document.createElement("div"); pGal.appendChild(projWrap);
-  var addBtn=document.createElement("button"); addBtn.className="addbtn"; addBtn.textContent="+ Add project"; pGal.appendChild(addBtn);
+  pGal.innerHTML='<h2>The <em>gallery</em></h2><p class="sub">gallery.html — a shelf of books. Design each book: cover, then pages of text, images and video.</p>';
+  pGal.appendChild(textField("Gallery intro","area","Every collection is a book…",function(){return d.text.gallery_intro;},function(v){d.text.gallery_intro=v;}));
+  var bookWrap=document.createElement("div"); pGal.appendChild(bookWrap);
+  var addBook=document.createElement("button"); addBook.className="addbtn"; addBook.textContent="+ Add book"; pGal.appendChild(addBook);
   panels.appendChild(pGal);
-  function renderProjects(){
-    projWrap.innerHTML="";
-    /* the 5 built-in projects — each deletable (hidden via d.galleryDel, restorable below) */
-    baseProjects.forEach(function(bp,i){
-      if(d.galleryDel.indexOf(i)!==-1) return;
-      d.gallery[i]=d.gallery[i]||{};
-      projWrap.appendChild(projectCard(d.gallery[i],"Project "+(i+1)+" — "+bp.n,function(){
-        eleveUI.confirm("Delete “"+((d.gallery[i]&&d.gallery[i].name)||bp.n)+"” from the gallery? You can restore it from the list below.",{title:"Delete project",ok:"Delete"}).then(function(ok){
-          if(ok){ if(d.galleryDel.indexOf(i)===-1) d.galleryDel.push(i); markDirty(); renderProjects(); }
-        });
-      }));
-    });
-    /* projects added in the CMS — deletable outright */
-    d.galleryAdd.forEach(function(p,k){
-      projWrap.appendChild(projectCard(p,"Added — "+(p.name||"New project"),function(){
-        eleveUI.confirm("Delete this added project? This can’t be undone.",{title:"Delete project",ok:"Delete"}).then(function(ok){
-          if(ok){ d.galleryAdd.splice(k,1); markDirty(); renderProjects(); }
-        });
-      }));
-    });
-    /* hidden built-in projects — one-tap restore */
-    if(d.galleryDel.length){
-      var hid=document.createElement("div"); hid.className="grp";
-      var hh=document.createElement("div"); hh.className="gh"; var hs=document.createElement("span"); hs.textContent="Hidden projects ("+d.galleryDel.length+")"; hh.appendChild(hs); hid.appendChild(hh);
-      d.galleryDel.slice().sort(function(a,b){return a-b;}).forEach(function(i){
-        var row=document.createElement("div"); row.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.4rem 0;border-bottom:1px solid rgba(23,24,27,.08)";
-        var nm=document.createElement("span"); nm.style.cssText="font-size:.85rem;color:#5b5f66"; nm.textContent=(baseProjects[i]?baseProjects[i].n:"Project "+(i+1))+((d.gallery[i]&&d.gallery[i].name&&d.gallery[i].name!==baseProjects[i].n)?" — "+d.gallery[i].name:"");
-        var rb=document.createElement("button"); rb.className="addbtn"; rb.style.margin="0"; rb.textContent="Restore";
-        rb.addEventListener("click",function(){ var j=d.galleryDel.indexOf(i); if(j!==-1) d.galleryDel.splice(j,1); markDirty(); renderProjects(); });
-        row.appendChild(nm); row.appendChild(rb); hid.appendChild(row);
+  function pageCard(pg,bi,pi){
+    var g=document.createElement("div"); g.className="grp"; g.style.marginLeft="1rem";
+    var gh=document.createElement("div"); gh.className="gh";
+    var sp=document.createElement("span"); sp.textContent="Page "+(pi+1); gh.appendChild(sp);
+    var db=document.createElement("button"); db.className="del"; db.textContent="Delete page";
+    db.addEventListener("click",function(){
+      eleveUI.confirm("Delete page "+(pi+1)+"?",{title:"Delete page",ok:"Delete"}).then(function(ok){
+        if(ok){ d.galleryBooks[bi].pages.splice(pi,1); markDirty(); renderBooks(); }
       });
-      projWrap.appendChild(hid);
-    }
+    });
+    gh.appendChild(db); g.appendChild(gh);
+    g.appendChild(textField("Heading","text","Page heading",function(){return pg.h;},function(v){pg.h=v;}));
+    g.appendChild(textField("Text","area","Page text…",function(){return pg.t;},function(v){pg.t=v;}));
+    g.appendChild(imageField("Page image","Shown large on the page. Adding a video below replaces the image.",function(){return pg.img;},function(v){pg.img=v;}));
+    g.appendChild(textField("Video URL","text","YouTube / Vimeo link, or a direct .mp4",function(){return pg.vid;},function(v){pg.vid=v;}));
+    return g;
   }
-  addBtn.addEventListener("click",function(){ d.galleryAdd.push({name:"New Project",loc:"Category · City",desc:""}); markDirty(); renderProjects(); });
-  renderProjects();
+  function bookCard(bk,bi){
+    var g=document.createElement("div"); g.className="grp";
+    var gh=document.createElement("div"); gh.className="gh";
+    var sp=document.createElement("span"); sp.textContent="Book "+(bi+1)+" — "+(bk.title||"Untitled"); gh.appendChild(sp);
+    var db=document.createElement("button"); db.className="del"; db.textContent="Delete book";
+    db.addEventListener("click",function(){
+      eleveUI.confirm("Delete the whole book and all its pages?",{title:"Delete book",ok:"Delete"}).then(function(ok){
+        if(ok){ d.galleryBooks.splice(bi,1); markDirty(); renderBooks(); }
+      });
+    });
+    gh.appendChild(db); g.appendChild(gh);
+    g.appendChild(textField("Book title","text","Residences",function(){return bk.title;},function(v){bk.title=v; sp.textContent="Book "+(bi+1)+" — "+(v||"Untitled");}));
+    g.appendChild(textField("Subtitle","text","Homes shaped around light…",function(){return bk.sub;},function(v){bk.sub=v;}));
+    g.appendChild(imageField("Cover image","Shown on the book cover and on its shelf spine.",function(){return bk.cover;},function(v){bk.cover=v;}));
+    bk.pages=bk.pages||[];
+    bk.pages.forEach(function(pg,pi){ g.appendChild(pageCard(pg,bi,pi)); });
+    var ap=document.createElement("button"); ap.className="addbtn"; ap.textContent="+ Add page";
+    ap.addEventListener("click",function(){ bk.pages.push({h:"",t:"",img:"",vid:""}); markDirty(); renderBooks(); });
+    g.appendChild(ap);
+    return g;
+  }
+  function renderBooks(){
+    bookWrap.innerHTML="";
+    if(!d.galleryBooks.length){
+      var tip=document.createElement("p"); tip.className="hint";
+      tip.textContent="No books yet — the public gallery shows three sample books until you add your own. Your first book replaces the samples.";
+      bookWrap.appendChild(tip);
+    }
+    d.galleryBooks.forEach(function(bk,bi){ bookWrap.appendChild(bookCard(bk,bi)); });
+  }
+  addBook.addEventListener("click",function(){ d.galleryBooks.push({title:"New Book",sub:"",cover:"",pages:[{h:"",t:"",img:"",vid:""}]}); markDirty(); renderBooks(); });
+  renderBooks();
+  /* (legacy project editor removed — the gallery is now designed as books above) */
 
   /* Materials */
   var pMat=document.createElement("div"); pMat.className="panel"; pMat.id="p-materials";
