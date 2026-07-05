@@ -439,7 +439,7 @@ window.__manualHTML = `
       <li><b>Left — section management:</b> the pills <b>Project, Actions, Moodboards, Renders, Approvals, Materials, Budget, Threads, Schedule, Activity</b>. Fill a section (add/edit/remove rows) then press <b>Save → client</b>; it appears in their portal instantly.</li>
       <li><b>Right — Comments rail:</b> every client signal in one always-on feed — likes/passes, comments on moodboard items and renders, change requests — newest first, each with a reply box (your reply is signed with your own name and lands live).</li>
       <li><b>Notification bell (🔔):</b> shows a red count when new client activity arrives while you're in the desk, and gives a little ring. Click the bell to clear the count. The first time you ever open a client it starts clear (you're catching up); after that it flags anything new, even across sessions, until you click it.</li>
-      <li>Shortcuts: <b>Publish showcase</b> drops the full Aurora Penthouse example in as a starting point; <b>Reset workspace</b> empties it. (Both need the relevant privilege — see §09.)</li>
+      <li>Shortcuts: <b>Publish showcase</b> drops the full Aurora Penthouse example in as a starting point; <b>Reset workspace</b> empties it. (Both need the relevant privilege — see §09.) <b>Download PDF</b> builds the client's full report — overview, actions, moodboards, renders, approvals, materials, budget and schedule — styled like their portal, and opens your browser's print dialog: choose <b>Save as PDF</b>.</li>
     </ul>
     <h4>Per section</h4>
     <table><tbody>
@@ -1057,6 +1057,104 @@ function selHtml(v,opts){ return '<select>'+opts.map(function(o){ var val=o[0],l
 
 window.__portalDesk=function(host){
   var clients=[], cur={uid:null,doc:null,sec:"project",room:0,rroom:0,thread:0};
+  /* ----- full client report, in the portal's own visual language — printed to PDF via the browser ----- */
+  function reportHTML(D,email){
+    var CUR=(D.budget&&D.budget.currency)||"€";
+    function money(n){ return CUR+Number(n||0).toLocaleString("en-US"); }
+    function fmt(t){ return t?new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—"; }
+    function chip(s,cls){ return '<span class="chip '+(cls||"")+'">'+esc(s)+'</span>'; }
+    function sec(no,kick,h,body){ return '<section><p class="kick">'+no+' — '+esc(kick)+'</p><h2>'+h+'</h2>'+body+'</section>'; }
+    var P=D.project||{}, out=[];
+    /* 01 — overview */
+    var phases=(P.phases||[]).map(function(p,i){ return '<span class="step'+(i===P.phase?" on":(i<P.phase?" done":""))+'">'+esc(p)+'</span>'; }).join('<span class="sep">→</span>');
+    out.push(sec("01","Project overview","<em>"+esc(P.name||"Untitled project")+"</em>",
+      '<p class="meta">'+esc(P.location||"")+(P.code?" · "+esc(P.code):"")+'</p>'+
+      '<p class="meta">Started '+fmt(P.startedAt)+' · Target '+fmt(P.targetAt)+'</p>'+
+      (phases?'<p class="steps">'+phases+'</p>':"")));
+    /* 02 — actions */
+    if((D.actions||[]).length) out.push(sec("02","Next actions","Client <em>to-dos</em>",
+      D.actions.map(function(a){ return '<div class="row"><span class="t">'+esc(a.label)+'</span>'+chip(a.done?"Done":"Open",a.done?"solid":"warn")+'</div>'; }).join("")));
+    /* 03 — moodboards */
+    var rooms=(D.moodboards&&D.moodboards.rooms)||[];
+    if(rooms.length) out.push(sec("03","Moodboards","Palette, <em>room by room</em>",
+      rooms.map(function(r){ return '<h3>'+esc(r.name)+'</h3><div class="swgrid">'+(r.items||[]).map(function(it){
+        var re=(D.reactions||{})[it.id], mark=re&&re.like===true?" ♥":(re&&re.like===false?" ✕":"");
+        return '<div class="sw"><span class="dot" style="background:'+esc(it.sw)+'"></span><span>'+esc(it.name)+mark+'</span><span class="mut">'+esc(it.cat||"")+'</span></div>'; }).join("")+'</div>'; }).join("")));
+    /* 04 — renders */
+    var rrooms=(D.renders&&D.renders.rooms)||[];
+    if(rrooms.length) out.push(sec("04","Renders","Versions &amp; <em>sign-off</em>",
+      rrooms.map(function(r){ return '<div class="row"><span class="t">'+esc(r.name)+' — '+(r.versions||[]).map(function(v){return esc(v.label);}).join(", ")+'</span>'+
+        (r.approved?chip("Approved "+r.approved,"solid"):chip("In review","dash"))+'</div>'; }).join("")));
+    /* 05 — approvals */
+    if((D.approvals||[]).length) out.push(sec("05","Approvals","Decisions on <em>record</em>",
+      D.approvals.map(function(a){ return '<div class="row"><span class="d">'+fmt(a.due)+'</span><span class="t">'+esc(a.title)+(a.room?' <span class="mut">· '+esc(a.room)+'</span>':"")+'</span>'+
+        chip(a.status==="approved"?"Approved":(a.status==="changes"?"Changes requested":"Pending"),a.status==="approved"?"solid":(a.status==="changes"?"warn":"dash"))+'</div>'+
+        (a.note?'<p class="note">“'+esc(a.note)+'”</p>':""); }).join("")));
+    /* 06 — materials */
+    if((D.materials||[]).length) out.push(sec("06","Materials","The spec <em>book</em>",
+      '<table><thead><tr><th>Material</th><th>Category</th><th>Finish</th><th>SKU</th><th>Supplier</th><th>Room</th><th>Availability</th></tr></thead><tbody>'+
+      D.materials.map(function(m){ return '<tr><td>'+esc(m.name)+'</td><td>'+esc(m.cat||"")+'</td><td>'+esc(m.finish||"")+'</td><td class="mono">'+esc(m.sku||"")+'</td><td>'+esc(m.supplier||"")+'</td><td>'+esc(m.room||"")+'</td><td>'+esc(m.status==="stock"?"In stock":(m.status==="back"?"Backordered":"Lead "+(m.lead||"")))+'</td></tr>'; }).join("")+'</tbody></table>'));
+    /* 07 — budget */
+    var B=D.budget||{categories:[],milestones:[]};
+    if((B.categories||[]).length||(B.milestones||[]).length){
+      var estT=B.categories.reduce(function(s,c){return s+(c.est||0);},0), actT=B.categories.reduce(function(s,c){return s+(c.actual||0);},0);
+      var paidT=B.milestones.reduce(function(s,m){return s+(m.status==="paid"?(m.amount||0):0);},0), owedT=B.milestones.reduce(function(s,m){return s+(m.status!=="paid"?(m.amount||0):0);},0);
+      out.push(sec("07","Budget &amp; procurement","Every euro, <em>accounted</em>",
+        '<p class="tot"><b>'+money(estT)+'</b> estimated · <b>'+money(actT)+'</b> committed · <b>'+money(estT-actT)+'</b> remaining</p>'+
+        B.categories.map(function(c){ return '<div class="row"><span class="t">'+esc(c.name)+(c.actual>c.est?' <span class="over">· over</span>':"")+'</span><span class="mono">est '+money(c.est)+' · actual '+money(c.actual)+'</span></div>'; }).join("")+
+        ((B.milestones||[]).length?'<h3>Payment milestones</h3>'+
+          B.milestones.map(function(m){ return '<div class="row"><span class="d">'+fmt(m.due)+'</span><span class="t">'+esc(m.label)+'</span><span class="mono">'+money(m.amount)+'</span>'+chip(m.status==="paid"?"Paid":(m.status==="due"?"Due":"Upcoming"),m.status==="paid"?"solid":(m.status==="due"?"warn":"dash"))+'</div>'; }).join("")+
+          '<p class="tot">Paid '+money(paidT)+' · Outstanding '+money(owedT)+'</p>':"")));
+    }
+    /* 08 — schedule */
+    if((D.schedule||[]).length){
+      var KIND={phase:"Phase",site:"Site visit",delivery:"Delivery",install:"Installation"};
+      out.push(sec("08","Schedule","The road to the <em>reveal</em>",
+        D.schedule.slice().sort(function(a,b){return a.date-b.date;}).map(function(s){
+          return '<div class="row"><span class="d">'+fmt(s.date)+'</span><span class="t">'+esc(s.title)+' <span class="mut">· '+esc(KIND[s.kind]||s.kind||"")+'</span></span>'+chip(s.status==="done"?"Done":(s.status==="next"?"Next":"Ahead"),s.status==="done"?"solid":(s.status==="next"?"warn":"dash"))+'</div>'; }).join("")));
+    }
+    /* 09 — activity */
+    if((D.activity||[]).length) out.push(sec("09","Activity trail","Every move, <em>logged</em>",
+      D.activity.slice(0,40).map(function(a){ return '<div class="row"><span class="d">'+fmt(a.t)+'</span><span class="t">'+esc(a.text)+' <span class="mut">— '+esc(a.who||a.by||"")+'</span></span></div>'; }).join("")));
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Elevé — '+esc(P.name||"Client report")+'</title>'+
+      '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
+      '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'+
+      '<style>'+
+      '*{box-sizing:border-box;margin:0}@page{margin:14mm}'+
+      'body{font-family:Inter,sans-serif;color:#17181b;background:#fff;padding:2rem;max-width:860px;margin:0 auto;font-size:.88rem;line-height:1.6}'+
+      '.kick{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:#8b8f97;margin-bottom:.35rem}'+
+      'h1,h2{font-family:"Playfair Display",serif;font-weight:600}h1{font-size:2rem}h2{font-size:1.4rem;margin-bottom:.7rem}h1 em,h2 em{font-style:italic}'+
+      'h3{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;margin:1.1rem 0 .3rem}'+
+      'header{border-bottom:1px solid #17181b;padding-bottom:1.2rem;margin-bottom:1.6rem}'+
+      'header .meta{font-family:"JetBrains Mono",monospace;font-size:.64rem;color:#3c3e44;margin-top:.4rem}'+
+      'section{margin-bottom:1.8rem;page-break-inside:avoid}'+
+      '.meta{font-family:"JetBrains Mono",monospace;font-size:.66rem;color:#3c3e44;margin:.15rem 0}'+
+      '.steps{margin-top:.6rem;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase}'+
+      '.step{color:#8b8f97}.step.done{color:#3c3e44;text-decoration:line-through}.step.on{color:#17181b;border:1px solid #17181b;padding:.15rem .45rem}.sep{margin:0 .45rem;color:#c6c9cf}'+
+      '.row{display:flex;align-items:baseline;gap:.9rem;padding:.5rem 0;border-top:1px dotted rgba(23,24,27,.25)}'+
+      '.row .d{font-family:"JetBrains Mono",monospace;font-size:.6rem;color:#8b8f97;min-width:5.6rem}.row .t{flex:1}'+
+      '.mut{color:#8b8f97;font-size:.78rem}.mono{font-family:"JetBrains Mono",monospace;font-size:.68rem;color:#3c3e44}'+
+      '.over{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.1em;color:#8a2b2b;text-transform:uppercase}'+
+      '.chip{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;padding:.22rem .5rem;border:1px solid #17181b;white-space:nowrap}'+
+      '.chip.solid{background:#17181b;color:#fff}.chip.warn{border-color:#8a2b2b;color:#8a2b2b}.chip.dash{border-style:dashed;color:#8b8f97;border-color:#8b8f97}'+
+      '.note{font-size:.8rem;color:#6b6f76;border:1px solid rgba(23,24,27,.22);background:#f6f7f9;padding:.55rem .7rem;margin:.35rem 0}'+
+      '.tot{font-family:"JetBrains Mono",monospace;font-size:.68rem;margin:.5rem 0;padding:.55rem 0;border-top:1px solid rgba(23,24,27,.35)}'+
+      '.swgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem .9rem;margin:.4rem 0}'+
+      '.sw{display:flex;align-items:center;gap:.5rem;font-size:.78rem;padding:.3rem 0}.sw .dot{width:18px;height:18px;border:1px solid rgba(23,24,27,.4);flex:none}.sw .mut{margin-left:auto}'+
+      'table{width:100%;border-collapse:collapse;font-size:.76rem}th{font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;text-align:left;color:#8b8f97;padding:.4rem .5rem .4rem 0;border-bottom:1px solid #17181b}'+
+      'td{padding:.45rem .5rem .45rem 0;border-bottom:1px dotted rgba(23,24,27,.25);vertical-align:top}'+
+      'footer{margin-top:2rem;padding-top:.8rem;border-top:1px solid #17181b;font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:#8b8f97;display:flex;justify-content:space-between}'+
+      '.printbar{position:fixed;top:.8rem;right:.8rem}.printbar button{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;padding:.6rem .9rem;border:1px solid #17181b;background:#17181b;color:#fff;cursor:pointer}'+
+      '@media print{.printbar{display:none}body{padding:0}}'+
+      '</style></head><body>'+
+      '<div class="printbar"><button onclick="window.print()">Print / Save as PDF</button></div>'+
+      '<header><p class="kick">Elevé — client report</p><h1><em>'+esc(P.name||"Untitled project")+'</em></h1>'+
+      '<p class="meta">Prepared for '+esc(email)+' · Generated '+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})+'</p></header>'+
+      out.join("")+
+      '<footer><span>Elevé — interior architecture</span><span>Confidential · prepared for '+esc(email)+'</span></footer>'+
+      '<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print();},500);});</scr'+'ipt>'+
+      '</body></html>';
+  }
   var SECS=[["project","Project"],["actions","Actions"],["moodboards","Moodboards"],["renders","Renders"],["approvals","Approvals"],["materials","Materials"],["budget","Budget"],["threads","Threads"],["schedule","Schedule"],["activity","Activity"]];
   var deskDirty=false; /* true while the studio has unsaved edits — live updates then pause instead of clobbering them */
   function refName(D,ref){ /* refId → a human name */
@@ -1095,6 +1193,7 @@ window.__portalDesk=function(host){
       '<div class="pd-bar">'+
         '<div class="field" style="flex:2"><label>Client</label><select id="pdClient"></select></div>'+
         '<button class="btn" id="pdSeed" title="Publish the Aurora Penthouse showcase into this client">Publish showcase</button>'+
+        '<button class="btn" id="pdPdf" title="Download this client’s full portal report as a PDF">Download PDF</button>'+
         '<button class="btn" id="pdReset">Reset workspace</button>'+
       '</div>'+
       '<p class="pd-status" id="pdStatus">—</p>'+
@@ -1129,6 +1228,12 @@ window.__portalDesk=function(host){
       eleveUI.confirm("Publish the full Aurora Penthouse showcase into this client's workspace? Their current portal content will be replaced.",{title:"Publish showcase",ok:"Publish"}).then(function(ok){
         if(ok) A("/admin/portal/"+cur.uid+"/seed-demo","POST",{}).then(function(){ eleveUI.toast("Showcase published ✓"); openClient(cur.uid); loadClients(); });
       });
+    });
+    document.getElementById("pdPdf").addEventListener("click",function(){
+      if(!cur.uid||!cur.doc){ eleveUI.toast("Open a client first"); return; }
+      var w=window.open("","_blank");
+      if(!w){ eleveUI.alert("Your browser blocked the report window — allow pop-ups for this site and try again.",{title:"Client report"}); return; }
+      w.document.write(reportHTML(cur.doc,cur.email||"")); w.document.close();
     });
     document.getElementById("pdReset").addEventListener("click",function(){
       if(!cur.uid) return;
