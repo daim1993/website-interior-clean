@@ -75,7 +75,8 @@
   canvas{display:block;width:100%;height:auto;touch-action:none;cursor:default}
   .zoomctl{position:absolute;right:.6rem;bottom:.6rem;display:flex;gap:.3rem}
   .zoomctl button{height:30px;min-width:30px;border:1px solid rgba(23,24,27,.35);background:rgba(255,255,255,.88);cursor:pointer;font-size:.95rem;color:var(--ink);font-family:"JetBrains Mono",monospace;transition:.2s}
-  .zoomctl button#zreset{padding:0 .5rem;font-size:.68rem}
+  .zoomctl button#zreset,.zoomctl button#v3dBtn{padding:0 .5rem;font-size:.68rem}
+  .zoomctl button#v3dBtn{letter-spacing:.06em;text-transform:uppercase}
   .zoomctl button:hover{background:var(--ink);color:#fff}
   #pfade{position:fixed;inset:0;z-index:990;pointer-events:none;opacity:1;background:linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3));transition:opacity .8s ease}
   #pfade.out{opacity:0}
@@ -192,7 +193,6 @@
       <label class="btn btn-soft" for="dxfImpInput" style="cursor:pointer;text-align:center">Import DXF</label><input type="file" id="dxfImpInput" accept=".dxf" style="display:none">
       <div class="row"><button class="btn btn-soft" id="saveBtn" style="flex:1">Save</button><label class="btn btn-soft" for="loadInput" style="flex:1;cursor:pointer;text-align:center">Load</label></div>
       <input type="file" id="loadInput" accept="application/json,.json" style="display:none">
-      <button class="btn btn-soft" id="v3dBtn">◱ 3D view · this floor + below</button>
       <div class="row"><button class="btn btn-soft" id="cloudSave" style="flex:1">☁ Cloud save</button><button class="btn btn-soft" id="myProjects" style="flex:1">Projects</button></div>
       <button class="btn btn-soft" id="shareProj">Share link</button></div>
     <p class="hint">Wheel = zoom · hold Space + drag = pan. Room/Poly draw shows wall lengths. Door/Window: click a wall (they follow the wall angle). Select a room → pick its Type → Auto-fill. Shortcuts: D door · W window · Q poly · G group/ungroup · R rotate. Double-click a polygon to edit its points (drag points · dbl-click a point to remove · dbl-click an edge to add · Esc to finish). Ctrl+D duplicate · Ctrl+G group · R rotate · Ctrl+Z undo · Del.</p>
@@ -201,7 +201,7 @@
     <div class="bar"><span class="title" id="floorTitle">Ground Floor</span><span class="meta mono" id="meta"></span></div>
     <div class="canvas-wrap">
       <canvas id="cad"></canvas>
-      <div class="zoomctl"><button id="zout">−</button><button id="zreset">100%</button><button id="zin">+</button></div>
+      <div class="zoomctl"><button id="v3dBtn" title="3D view — this floor + below">◱ 3D view</button><button id="zout">−</button><button id="zreset">100%</button><button id="zin">+</button></div>
     </div>
     <div class="specbar">
       <div class="spec"><label>Material finish</label><select id="selMaterial"></select></div>

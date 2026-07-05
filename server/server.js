@@ -320,7 +320,12 @@ app.get("/api/projects/:id",(req,res)=>{ const u=authUser(req); if(!u) return re
   const p=ownProject(u,req.params.id); if(!p) return res.status(404).json({error:"Not found"}); res.json({ project:p }); });
 app.put("/api/projects/:id",(req,res)=>{ const u=authUser(req); if(!u) return res.status(401).json({error:"Unauthorized"});
   const p=ownProject(u,req.params.id); if(!p) return res.status(404).json({error:"Not found"});
-  if(req.body && typeof req.body.data==="object"){ p.versions=p.versions||[]; p.versions.push({t:p.updatedAt,data:p.data}); if(p.versions.length>30) p.versions.shift(); p.data=req.body.data; }
+  if(req.body && typeof req.body.data==="object"){ p.versions=p.versions||[];
+    /* silent auto-saves only cut a new version every 10 min — manual saves always do */
+    const lastV=p.versions[p.versions.length-1];
+    if(!req.body.autosave || !lastV || (Date.now()-(lastV.t||0))>600000){
+      p.versions.push({t:p.updatedAt,data:p.data}); if(p.versions.length>30) p.versions.shift(); }
+    p.data=req.body.data; }
   if(validStr(req.body&&req.body.name,120)) p.name=req.body.name;
   p.updatedAt=Date.now(); persist(); res.json({ ok:true, versions:(p.versions||[]).length }); });
 app.delete("/api/projects/:id",(req,res)=>{ const u=authUser(req); if(!u) return res.status(401).json({error:"Unauthorized"});
@@ -411,6 +416,8 @@ app.post("/api/admin/inbox/delete",(req,res)=>{ const u=can(req,res,"site","view
     if(db.messages.length===n) return res.status(404).json({error:"Message not found"}); }
   else if(kind==="consult"){ const n=(db.consults||[]).length; db.consults=(db.consults||[]).filter(x=>x.id!==id);
     if(db.consults.length===n) return res.status(404).json({error:"Booking not found"}); }
+  else if(kind==="subscriber"){ const n=(db.subscribers||[]).length; db.subscribers=(db.subscribers||[]).filter(x=>x.email!==id);
+    if(db.subscribers.length===n) return res.status(404).json({error:"Subscriber not found"}); }
   else return res.status(400).json({error:"Unknown kind"});
   persist(); logline({ev:"inbox-delete",by:u.email||"admin",kind}); res.json({ ok:true }); });
 

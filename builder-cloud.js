@@ -13,6 +13,37 @@
   function autosave(){ if(!B())return; try{ var snap=JSON.stringify(B().serialize()); if(snap!==last){ last=snap; localStorage.setItem(AK, JSON.stringify({t:Date.now(),data:snap})); } }catch(e){} }
   setInterval(autosave, 4000);
   window.addEventListener("beforeunload", autosave);
+
+  /* cloud auto-sync — when the client is signed in, changes flow to their cloud project by themselves.
+     First save still asks for a project name (via ☁ Cloud save) or creates one silently; after that it's hands-free. */
+  var lastCloud="", cloudBusy=false, cloudOff=false, lastPush=0;
+  function markSynced(){ var s=document.getElementById("cloudSave"); if(!s) return;
+    s.textContent="☁ Saved "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    clearTimeout(markSynced.t); markSynced.t=setTimeout(function(){ s.textContent="☁ Cloud save"; },2600); }
+  function cloudAuto(){
+    if(cloudOff||cloudBusy||!B()) return;
+    var tok=token(); if(!tok) return;                       /* not signed in — local autosave only */
+    var snap; try{ snap=JSON.stringify(B().serialize()); }catch(e){ return; }
+    if(snap===lastCloud || Date.now()-lastPush<10000) return; /* nothing new, or pushed <10s ago */
+    var pid=null; try{ pid=localStorage.getItem(PK); }catch(e){}
+    cloudBusy=true;
+    function done(ok){ cloudBusy=false; if(ok){ lastCloud=snap; lastPush=Date.now(); markSynced(); } }
+    if(pid){
+      api("/projects/"+pid,"PUT",{data:JSON.parse(snap),autosave:true},tok).then(function(r){
+        if(r.status===404){ try{localStorage.removeItem(PK);}catch(e){} return done(false); }
+        if(r.status===401){ cloudOff=true; return done(false); } /* session expired — manual Cloud save re-signs in */
+        done(r.ok);
+      }).catch(function(){ done(false); });
+    } else {
+      api("/projects","POST",{name:"Elevé plan — "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}),data:JSON.parse(snap)},tok).then(function(r){
+        if(r.status===402){ cloudOff=true; done(false); return null; } /* plan limit — stay local, no nagging */
+        if(r.status===401){ cloudOff=true; done(false); return null; }
+        return r.ok?r.json():null;
+      }).then(function(j){ if(j&&j.id){ try{localStorage.setItem(PK,j.id);}catch(e){} toast("☁ Auto-saving to your cloud ✓"); done(true); } else cloudBusy=false; })
+      .catch(function(){ cloudBusy=false; });
+    }
+  }
+  setInterval(cloudAuto, 5000);
   function offerRecovery(){
     var raw; try{ raw=localStorage.getItem(AK); }catch(e){}
     if(!raw || sessionStorage.getItem("eleve_builder_session")) return;
@@ -44,10 +75,10 @@
   }
 
   function cloudSave(){ ensureAuth(function(tok){ var data=B().serialize(); var pid=null; try{pid=localStorage.getItem(PK);}catch(e){}
-    if(pid){ api("/projects/"+pid,"PUT",{data:data},tok).then(function(r){ if(r.status===404){ localStorage.removeItem(PK); return cloudSave(); } if(!r.ok) throw 0; return r.json(); }).then(function(){ toast("Cloud saved ✓ (version added)"); }).catch(function(){ eleveUI.alert("Save failed.",{title:"Cloud save"}); }); }
+    if(pid){ api("/projects/"+pid,"PUT",{data:data},tok).then(function(r){ if(r.status===404){ localStorage.removeItem(PK); return cloudSave(); } if(!r.ok) throw 0; return r.json(); }).then(function(){ lastCloud=JSON.stringify(data); cloudOff=false; toast("Cloud saved ✓ (version added)"); }).catch(function(){ eleveUI.alert("Save failed.",{title:"Cloud save"}); }); }
     else { eleveUI.prompt("Name this project",{title:"Cloud save",value:"Elevé plan",ok:"Save"}).then(function(nm){
       if(nm===null) return; nm=(nm||"").trim()||"Elevé plan";
-      api("/projects","POST",{name:nm,data:data},tok).then(function(r){ if(r.status===402) return r.json().then(function(e){eleveUI.alert(e.error,{title:"Cloud save"});}); if(!r.ok) throw 0; return r.json(); }).then(function(j){ if(j&&j.id){ localStorage.setItem(PK,j.id); toast("Saved to cloud ✓"); } }).catch(function(){ eleveUI.alert("Save failed.",{title:"Cloud save"}); });
+      api("/projects","POST",{name:nm,data:data},tok).then(function(r){ if(r.status===402) return r.json().then(function(e){eleveUI.alert(e.error,{title:"Cloud save"});}); if(!r.ok) throw 0; return r.json(); }).then(function(j){ if(j&&j.id){ localStorage.setItem(PK,j.id); lastCloud=JSON.stringify(data); cloudOff=false; toast("Saved to cloud ✓ — auto-save is on"); } }).catch(function(){ eleveUI.alert("Save failed.",{title:"Cloud save"}); });
     }); }
   }); }
   function myProjects(){ ensureAuth(function(tok){ api("/projects","GET",null,tok).then(function(r){return r.json();}).then(function(j){ var list=j.projects||[]; if(!list.length){ eleveUI.alert("No cloud projects yet — use Cloud save first.",{title:"Projects"}); return; }

@@ -1822,12 +1822,14 @@ window.__requestsDesk=function(host){
         '<button class="btn" id="reqRefresh" style="margin-left:auto">Refresh</button>'+
       '</div>'+
       '<div class="grp"><p class="mini" style="margin:.2rem 0 .4rem">Contact messages — from the form at the bottom of the home page</p><div id="reqMsgs"></div></div>'+
-      '<div class="grp" style="margin-top:1.2rem"><p class="mini" style="margin:.2rem 0 .4rem">Consultation bookings — from book.html</p><div id="reqCons"></div></div>';
+      '<div class="grp" style="margin-top:1.2rem"><p class="mini" style="margin:.2rem 0 .4rem">Consultation bookings — from book.html</p><div id="reqCons"></div></div>'+
+      '<div class="grp" style="margin-top:1.2rem"><div style="display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap"><p class="mini" style="margin:.2rem 0 .4rem">Newsletter subscribers</p>'+
+        (subs.length?'<button class="btn" id="reqCopySubs" style="font-size:.56rem;height:28px;margin-left:auto">Copy all emails</button>':"")+'</div><div id="reqSubs"></div></div>';
     var hm=document.getElementById("reqMsgs");
     hm.innerHTML=msgs.length?msgs.map(function(m){
       return '<div class="box" style="margin:.5rem 0;padding:.9rem 1rem'+(m.read?";opacity:.62":"")+'">'+
         '<div style="display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap">'+
-          '<b>'+esc(m.name)+'</b><a class="mono" style="font-size:.66rem" href="mailto:'+esc(m.email)+'">'+esc(m.email)+'</a>'+
+          '<b>'+esc(m.name)+'</b><a class="mono" style="font-size:.66rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(m.email)+'">'+esc(m.email)+'</a>'+
           '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">'+fmt(m.t)+(m.read?" · read":" · new")+'</span></div>'+
         '<p style="margin:.45rem 0 .6rem;font-size:.85rem;line-height:1.6;white-space:pre-wrap">'+esc(m.message)+'</p>'+
         '<button class="btn" data-read="'+esc(m.id)+'" style="font-size:.56rem;height:28px">'+(m.read?"Mark unread":"Mark read")+'</button> '+
@@ -1837,12 +1839,35 @@ window.__requestsDesk=function(host){
     hc.innerHTML=cons.length?cons.map(function(c){
       return '<div class="box" style="margin:.5rem 0;padding:.9rem 1rem">'+
         '<div style="display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap">'+
-          '<b>'+esc(c.name)+'</b><a class="mono" style="font-size:.66rem" href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>'+
+          '<b>'+esc(c.name)+'</b><a class="mono" style="font-size:.66rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>'+
           '<span class="mono" style="font-size:.66rem">'+esc(c.date)+(c.time?(" · "+esc(c.time)):"")+'</span>'+
           '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">asked '+fmt(c.t)+'</span></div>'+
         (c.note?'<p style="margin:.45rem 0 .6rem;font-size:.85rem;line-height:1.6;white-space:pre-wrap">'+esc(c.note)+'</p>':"")+
         '<button class="btn" data-del-con="'+esc(c.id)+'" style="font-size:.56rem;height:28px;margin-top:.3rem">Delete</button>'+
       '</div>'; }).join(""):'<p class="hint">No consultation bookings yet.</p>';
+    var hs=document.getElementById("reqSubs");
+    hs.innerHTML=subs.length?subs.slice().sort(function(a,b){return (b.t||0)-(a.t||0);}).map(function(s){
+      return '<div style="display:flex;align-items:baseline;gap:.8rem;padding:.45rem 0;border-top:1px dotted var(--line);flex-wrap:wrap">'+
+        '<a class="mono" style="font-size:.7rem;color:var(--ink);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px" href="mailto:'+esc(s.email)+'">'+esc(s.email)+'</a>'+
+        '<span class="mono" style="font-size:.6rem;color:var(--soft);margin-left:auto">'+(s.t?fmt(s.t):"")+'</span>'+
+        '<button class="btn" data-del-sub="'+esc(s.email)+'" style="font-size:.52rem;height:24px">Remove</button>'+
+      '</div>'; }).join(""):'<p class="hint">No subscribers yet — emails from the newsletter box land here.</p>';
+    var cp=document.getElementById("reqCopySubs");
+    if(cp) cp.addEventListener("click",function(){
+      var all=subs.map(function(s){return s.email;}).join(", ");
+      (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(all):Promise.reject())
+        .then(function(){ eleveUI.toast("Copied "+subs.length+" email"+(subs.length===1?"":"s")+" ✓"); })
+        .catch(function(){ window.prompt("Copy the list:",all); });
+    });
+    host.querySelectorAll("[data-del-sub]").forEach(function(b){ b.addEventListener("click",function(){
+      var em=b.getAttribute("data-del-sub");
+      eleveUI.confirm("Remove "+em+" from the subscriber list?",{title:"Requests",ok:"Remove"}).then(function(ok){
+        if(!ok) return;
+        A("/admin/inbox/delete","POST",{kind:"subscriber",id:em}).then(function(){
+          data.subscribers=(data.subscribers||[]).filter(function(x){return x.email!==em;}); render();
+        }).catch(function(x){ eleveUI.alert((x&&x.error)||"Could not remove.",{title:"Requests"}); });
+      });
+    }); });
     document.getElementById("reqRefresh").addEventListener("click",load);
     host.querySelectorAll("[data-read]").forEach(function(b){ b.addEventListener("click",function(){
       var m=(data.messages||[]).find(function(x){return x.id===b.getAttribute("data-read");}); if(!m) return;
