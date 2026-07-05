@@ -193,6 +193,11 @@
  .ms .d{font-family:"JetBrains Mono",monospace;font-size:.62rem;color:#8b8f97;width:5.4rem}
  .ms .t{flex:1;font-size:.9rem}
  .ms .a{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:#17181b}
+ .paybtn{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+   padding:.35rem .7rem;border:1px solid #17181b;background:#17181b;color:#f4f2ee;text-decoration:none;white-space:nowrap}
+ .paybtn:hover{background:transparent;color:#17181b}
+ .mstot{display:flex;justify-content:space-between;gap:1rem;margin-top:.9rem;padding-top:.8rem;border-top:1px solid rgba(23,24,27,.35);
+   font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#3c3e44}
 
  /* messages */
  .msgs{display:flex;flex-direction:column;gap:.9rem;max-height:52vh;overflow:auto;padding:.2rem .2rem 1rem}
@@ -694,17 +699,23 @@ function renderBudg(){
       '<div class="bar2"><span class="est" style="width:'+(c.est/max*100).toFixed(1)+'%"></span>'+
       '<span class="act" style="width:'+(c.actual/max*100).toFixed(1)+'%"></span></div></div>';
   }).join("");
-  var ms=P.budget.milestones.map(function(m){
+  var msArr=P.budget.milestones;
+  var paidT=msArr.reduce(function(s,m){return s+(m.status==="paid"?m.amount:0);},0);
+  var owedT=msArr.reduce(function(s,m){return s+(m.status!=="paid"?m.amount:0);},0);
+  var ms=msArr.map(function(m){
     var chip=m.status==="paid"?'<span class="chip solid">Paid</span>':(m.status==="due"?'<span class="chip warn">Due</span>':'<span class="chip dash">Upcoming</span>');
-    return '<div class="ms"><span class="d">'+fmtD(m.due)+'</span><span class="t">'+esc(m.label)+'</span><span class="a">'+eur(m.amount)+'</span>'+chip+'</div>';
+    var pay=(m.status!=="paid"&&typeof m.pay==="string"&&/^https:\/\//i.test(m.pay))?
+      '<a class="paybtn" href="'+attr(m.pay)+'" target="_blank" rel="noopener noreferrer">Pay now</a>':"";
+    return '<div class="ms"><span class="d">'+fmtD(m.due)+'</span><span class="t">'+esc(m.label)+'</span><span class="a">'+eur(m.amount)+'</span>'+chip+pay+'</div>';
   }).join("");
+  var msFoot=msArr.length?'<div class="mstot"><span>Paid '+eur(paidT)+'</span><span>Outstanding '+eur(owedT)+'</span></div>':"";
   document.getElementById("p-budg").innerHTML=
     '<div class="ph"><p class="kick">06 — Budget &amp; procurement</p><h2>Every euro, <em>accounted</em></h2>'+
     '<p class="sub">Estimated against actual, per category — hatched is the estimate, solid ink is committed spend.</p></div>'+
     '<div class="btotals"><div><b>'+eur(estT)+'</b><span>Estimated</span></div><div><b>'+eur(actT)+'</b><span>Committed</span></div>'+
     '<div><b>'+eur(estT-actT)+'</b><span>Remaining</span></div></div>'+
     '<div class="grid2"><div class="card tick"><h3>By category</h3>'+rows+'</div>'+
-    '<div class="card tick"><h3>Payment milestones</h3>'+ms+'</div></div>';
+    '<div class="card tick"><h3>Payment milestones</h3>'+ms+msFoot+'</div></div>';
 }
 
 /* ---------- messages ---------- */

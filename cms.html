@@ -448,7 +448,7 @@ window.__manualHTML = `
       <tr><td><b>Renders</b></td><td>Rooms × versions (v1/v2/Final), each with a before &amp; after — press <b>↑</b> to upload real photos or renders (they're compressed and stored with that client), or keep gradients. Clients drag a slider to compare and approve a version.</td></tr>
       <tr><td><b>Approvals</b></td><td>Titled sign-offs with deadlines. Clients approve or request changes with a note — decisions and notes appear here live. (The client's comments/likes live in the right-hand Comments rail, not a pill.)</td></tr>
       <tr><td><b>Materials</b></td><td>The spec book — finish, SKU, supplier, room, availability (stock / lead / backordered).</td></tr>
-      <tr><td><b>Budget</b></td><td>Categories (estimated vs actual) and payment milestones (paid / due / upcoming).</td></tr>
+      <tr><td><b>Budget</b></td><td>Categories (estimated vs actual) and payment milestones (paid / due / upcoming). Optionally paste a payment-gateway URL (e.g. a Stripe Payment Link) per milestone — unpaid milestones then show a <b>Pay now</b> button in the portal. When the gateway confirms payment, flip the milestone to <b>Paid</b> here and the client's totals update instantly.</td></tr>
       <tr><td><b>Threads</b></td><td>Message topics. Type a reply and choose who it's from (e.g. "Camille — Lead Designer") — the client sees it live.</td></tr>
       <tr><td><b>Schedule</b></td><td>Dated milestones — phases, site visits, deliveries, install week.</td></tr>
       <tr><td><b>Activity</b></td><td>A read-only trail of every studio and client action on that project.</td></tr>
@@ -1480,9 +1480,11 @@ window.__portalDesk=function(host){
         ["Milestone","1.6fr",function(it){return inp(it.label);}],
         ["Amount","0.8fr",function(it){return inp(it.amount,"0","number");}],
         ["Due","0.9fr",function(it){return inp(d2i(it.due),"","date");}],
-        ["Status","0.9fr",function(it){return selHtml(it.status,[["paid","Paid"],["due","Due"],["upcoming","Upcoming"]]);}]
+        ["Status","0.9fr",function(it){return selHtml(it.status,[["paid","Paid"],["due","Due"],["upcoming","Upcoming"]]);}],
+        ["Payment link","1.3fr",function(it){return inp(it.pay||"","https://buy.stripe.com/…","url");}]
       ],function(){return {id:nid(),label:"New milestone",amount:0,due:Date.now()+30*86400000,status:"upcoming"};},
-      function(v,it){ it.label=v[0]; it.amount=parseFloat(v[1])||0; it.due=i2d(v[2]); it.status=v[3]; });
+      function(v,it){ it.label=v[0]; it.amount=parseFloat(v[1])||0; it.due=i2d(v[2]); it.status=v[3];
+        var pay=String(v[4]||"").trim(); it.pay=/^https:\/\//i.test(pay)?pay.slice(0,500):undefined; });
       saveBtn("budget",function(){ return D.budget; });
     }
     else if(cur.sec==="threads"){
