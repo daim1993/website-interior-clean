@@ -235,6 +235,10 @@
   var leavesEl=document.getElementById("leaves"), book=document.getElementById("book"),
       scene=document.getElementById("scene"), shelfRow=document.getElementById("shelfRow");
   var active=0, leaves=[], N=0, cur=0, PW=620, BOOKW=1240;
+  try{
+    var requestedBook=parseInt(new URLSearchParams(location.search).get("book")||"0",10);
+    if(Number.isFinite(requestedBook) && requestedBook>=0 && requestedBook<BOOKS.length) active=requestedBook;
+  }catch(e){}
 
   /* the book is deliberately wider than the page — it bleeds past the edges */
   function fitBook(){

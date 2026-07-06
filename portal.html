@@ -210,6 +210,10 @@
  .composer{display:flex;gap:.7rem;border-top:1px solid #17181b;padding-top:1rem;margin-top:.4rem}
  .composer input{flex:1;font:inherit;font-size:.92rem;background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.3);padding:.55rem 0;outline:none;color:#17181b}
  .composer input:focus{border-bottom-color:#17181b}
+ .panel label{display:block;font-family:"JetBrains Mono",monospace;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:#8b8f97;margin:0 0 .25rem}
+ .panel input,.panel textarea,.panel select{width:100%;font:inherit;font-size:.92rem;color:#17181b;background:transparent;border:none;border-bottom:1px solid rgba(23,24,27,.3);padding:.55rem 0;outline:none}
+ .panel textarea{resize:vertical;line-height:1.6;border:1px solid rgba(23,24,27,.25);padding:.75rem;margin-top:.25rem;background:#fff}
+ .panel input:focus,.panel textarea:focus,.panel select:focus{border-color:#17181b}
 
  /* schedule */
  .tl{position:relative;padding-left:1.6rem}
@@ -306,7 +310,8 @@
     <button data-no="05" data-tab="mat">Materials</button>
     <button data-no="06" data-tab="budg">Budget</button>
     <button data-no="07" data-tab="msg">Messages</button>
-    <button data-no="08" data-tab="sched">Schedule</button>
+    <button data-no="08" data-tab="review">Review</button>
+    <button data-no="09" data-tab="sched">Schedule</button>
     <div class="phase-mini"><p class="t">Current phase</p><p class="v" id="phaseMini">—</p></div>
   </aside>
 
@@ -318,6 +323,7 @@
     <section class="panel" id="p-mat"></section>
     <section class="panel" id="p-budg"></section>
     <section class="panel" id="p-msg"></section>
+    <section class="panel" id="p-review"></section>
     <section class="panel" id="p-sched"></section>
   </main>
 </div>
@@ -757,9 +763,41 @@ function renderMsg(){
   document.getElementById("msgIn").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); send(); } });
 }
 
+/* ---------- review ---------- */
+function renderReview(){
+  var r=P.review||{};
+  document.getElementById("p-review").innerHTML=
+    '<div class="ph"><p class="kick">08 - Client review</p><h2>Share your <em>voice</em></h2>'+
+    '<p class="sub">Your review is attached to your client account and can appear in Client voices on the main page.</p></div>'+
+    '<div class="card tick" style="max-width:44rem">'+
+      (r.text?'<p class="chip solid" style="display:inline-block;margin-bottom:1rem">Published</p>':'')+
+      '<div class="grid2" style="grid-template-columns:1fr 1fr;margin-top:0">'+
+        '<div><label for="revName">Display name</label><input id="revName" maxlength="80" value="'+attr(r.name||((ME&&ME.email)?ME.email.split("@")[0]:""))+'"></div>'+
+        '<div><label for="revRole">Project / location</label><input id="revRole" maxlength="120" placeholder="Penthouse owner, Lisbon" value="'+attr(r.role||"")+'"></div>'+
+      '</div>'+
+      '<div style="margin-top:1rem"><label for="revRating">Rating</label><select id="revRating">'+[5,4,3,2,1].map(function(n){return '<option value="'+n+'"'+((r.rating||5)===n?' selected':'')+'>'+n+' / 5</option>';}).join("")+'</select></div>'+
+      '<div style="margin-top:1rem"><label for="revText">Review</label><textarea id="revText" rows="6" maxlength="1200" placeholder="Tell the studio what the experience felt like...">'+esc(r.text||"")+'</textarea></div>'+
+      '<button class="p-btn solid" id="revSend" style="margin-top:1rem">Post review</button>'+
+      '<p id="revStatus" role="status" style="margin:.8rem 0 0;color:#6b6f76;font-size:.82rem"></p>'+
+    '</div>';
+  document.getElementById("revSend").addEventListener("click",function(){
+    var body={
+      name:document.getElementById("revName").value.trim(),
+      role:document.getElementById("revRole").value.trim(),
+      rating:parseInt(document.getElementById("revRating").value,10)||5,
+      text:document.getElementById("revText").value.trim()
+    };
+    var st=document.getElementById("revStatus");
+    if(!body.text){ st.textContent="Write a review first."; return; }
+    api("/portal/review","POST",body).then(function(j){
+      P.review=j.review; eleveUI.toast("Review posted to Client voices"); renderReview();
+    }).catch(function(x){ st.textContent=(x&&x.error)||"Could not post the review."; });
+  });
+}
+
 /* ---------- schedule ---------- */
 function renderSched(){
-  if(!P.project||!P.schedule.length){ document.getElementById("p-sched").innerHTML=waitingCard("08 — Schedule"); return; }
+  if(!P.project||!P.schedule.length){ document.getElementById("p-sched").innerHTML=waitingCard("09 - Schedule"); return; }
   var KIND={phase:"Phase",site:"Site visit",delivery:"Delivery",install:"Installation"};
   var items=P.schedule.slice().sort(function(a,b){return a.date-b.date;}).map(function(s){
     return '<div class="tli '+cls(s.status)+'"><span class="mark"></span>'+
@@ -767,13 +805,13 @@ function renderSched(){
       '<p class="t" style="margin:0">'+esc(s.title)+'</p></div>';
   }).join("");
   document.getElementById("p-sched").innerHTML=
-    '<div class="ph"><p class="kick">08 — Schedule &amp; milestones</p><h2>The road to the <em>reveal</em></h2>'+
+    '<div class="ph"><p class="kick">09 - Schedule &amp; milestones</p><h2>The road to the <em>reveal</em></h2>'+
     '<p class="sub">Phases, site visits, deliveries and the installation week — the whole engagement on one line.</p></div>'+
     '<div class="card tick"><div class="tl">'+items+'</div></div>';
 }
 
 function renderAll(){
-  renderDash(); renderMood(); renderRend(); renderAppr(); renderMat(); renderBudg(); renderMsg(); renderSched();
+  renderDash(); renderMood(); renderRend(); renderAppr(); renderMat(); renderBudg(); renderMsg(); renderReview(); renderSched();
   var pend=P.approvals.filter(function(a){return a.status==="pending";}).length;
   document.getElementById("bAppr").textContent=pend||""; document.getElementById("bAppr").style.display=pend?"":"none";
   var liked=Object.keys(P.reactions).length;

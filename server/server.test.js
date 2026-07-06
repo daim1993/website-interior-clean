@@ -115,3 +115,34 @@ test("creates and lists admin-only compressed backups", async () => {
   assert.ok(body.backups.some(b => b.name === created.backup.name));
   assert.ok(fs.existsSync(path.join(process.env.BACKUP_DIR, created.backup.name)));
 });
+
+test("publishes client portal reviews to the public reviews feed", async () => {
+  const create = await fetch(base + "/api/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await adminHeaders()) },
+    body: JSON.stringify({ email: "client@example.com", password: "client123", role: "user" })
+  });
+  assert.equal(create.status, 200);
+
+  const login = await fetch(base + "/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "client@example.com", password: "client123" })
+  });
+  assert.equal(login.status, 200);
+  const token = (await login.json()).token;
+
+  const post = await fetch(base + "/api/portal/review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ name: "Client A", role: "Homeowner, Dubai", rating: 5, text: "The process felt clear and calm." })
+  });
+  assert.equal(post.status, 200);
+  const saved = await post.json();
+  assert.equal(saved.review.text, "The process felt clear and calm.");
+
+  const feed = await fetch(base + "/api/reviews");
+  assert.equal(feed.status, 200);
+  const body = await feed.json();
+  assert.ok(body.reviews.some(r => r.name === "Client A" && r.text === "The process felt clear and calm."));
+});

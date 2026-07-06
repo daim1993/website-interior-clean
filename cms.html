@@ -541,7 +541,7 @@ node server.js</div>Tell me and I'll bake these into your launcher / deploy conf
   "use strict";
   var KEY="eleve_cms";
   var d; try{ d=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ d={}; }
-  d.text=d.text||{}; d.img=d.img||{}; d.gallery=d.gallery||{}; d.galleryAdd=d.galleryAdd||[]; d.galleryDel=d.galleryDel||[]; d.materials=d.materials||{}; d.materialsCat=d.materialsCat||{}; d.materialsDel=d.materialsDel||{}; d.materialsCatDel=d.materialsCatDel||{}; d.materialsAdd=d.materialsAdd||{}; d.materialsBooks=d.materialsBooks||[];
+  d.text=d.text||{}; d.img=d.img||{}; d.gallery=d.gallery||{}; d.galleryAdd=d.galleryAdd||[]; d.galleryDel=d.galleryDel||[]; d.materials=d.materials||{}; d.materialsCat=d.materialsCat||{}; d.materialsDel=d.materialsDel||{}; d.materialsCatDel=d.materialsCatDel||{}; d.materialsAdd=d.materialsAdd||{}; d.materialsBooks=d.materialsBooks||[]; d.stats=d.stats||[];
   var saveEl=document.getElementById("save"), t0, dirty=false;
   function markDirty(){ dirty=true; saveEl.textContent="Unsaved — press Apply"; saveEl.classList.add("on"); }
   /* __ts stamps every save so the public pages / this editor never let older
@@ -577,6 +577,17 @@ node server.js</div>Tell me and I'll bake these into your launcher / deploy conf
     {n:"Skyline Terrace",l:"Rooftop · Barcelona"},
     {n:"Atelier Office",l:"Workplace · Berlin"}
   ];
+
+  var statDefaults=[
+    {count:120,suffix:"",label:"Projects delivered"},
+    {count:14,suffix:"",label:"Cities"},
+    {count:18,suffix:"",label:"Years"},
+    {count:96,suffix:"%",label:"Client satisfaction"}
+  ];
+  function statAt(i){
+    d.stats[i]=Object.assign({},statDefaults[i],d.stats[i]||{});
+    return d.stats[i];
+  }
 
   function fileToImg(file,cb){
     var r=new FileReader();
@@ -667,6 +678,16 @@ node server.js</div>Tell me and I'll bake these into your launcher / deploy conf
   pHome.innerHTML='<h2>Home <em>page</em></h2><p class="sub">index.html — hero, founder and contact.</p>';
   pHome.appendChild(imageField("Founder photo","Replaces the portrait block in the About section.",function(){return d.img.founder_photo;},function(v){ if(v)d.img.founder_photo=v; else delete d.img.founder_photo; }));
   homeText.forEach(function(fld){ pHome.appendChild(textField(fld[1],fld[2],fld[3],function(){return d.text[fld[0]];},function(v){d.text[fld[0]]=v;})); });
+  var pStats=document.createElement("div"); pStats.className="grp";
+  pStats.innerHTML='<div class="gh"><span>Studio numbers</span></div><p class="hint">These four numbers appear on the main page under Selected work.</p>';
+  statDefaults.forEach(function(_,i){
+    var st=statAt(i), row=document.createElement("div"); row.className="irow"; row.style.gridTemplateColumns="1fr .5fr 1.4fr";
+    row.appendChild(textField("Number","text","120",function(){return st.count;},function(v){st.count=v;}));
+    row.appendChild(textField("Suffix","text","% / +",function(){return st.suffix;},function(v){st.suffix=v;}));
+    row.appendChild(textField("Label","text","Projects delivered",function(){return st.label;},function(v){st.label=v;}));
+    pStats.appendChild(row);
+  });
+  pHome.appendChild(pStats);
   panels.appendChild(pHome);
 
   /* Gallery — book designer (shelf of books; each book has cover + pages of text/image/video) */
@@ -1203,7 +1224,7 @@ window.__portalDesk=function(host){
       '<scr'+'ipt>window.addEventListener("load",function(){setTimeout(function(){window.print();},500);});</scr'+'ipt>'+
       '</body></html>';
   }
-  var SECS=[["project","Project"],["actions","Actions"],["moodboards","Moodboards"],["renders","Renders"],["approvals","Approvals"],["materials","Materials"],["budget","Budget"],["threads","Threads"],["schedule","Schedule"],["activity","Activity"]];
+  var SECS=[["project","Project"],["actions","Actions"],["moodboards","Moodboards"],["renders","Renders"],["approvals","Approvals"],["materials","Materials"],["budget","Budget"],["threads","Threads"],["schedule","Schedule"],["review","Review"],["activity","Activity"]];
   var deskDirty=false; /* true while the studio has unsaved edits — live updates then pause instead of clobbering them */
   function refName(D,ref){ /* refId → a human name */
     var rooms=(D.moodboards&&D.moodboards.rooms)||[];
@@ -1435,6 +1456,7 @@ window.__portalDesk=function(host){
       if(id==="comments"){ var C=D.comments||{}; for(k in C) n+=(C[k]||[]).length; n+=Object.keys(D.reactions||{}).length; }
       else if(id==="approvals") n=(D.approvals||[]).filter(function(a){return a.status==="pending";}).length;
       else if(id==="threads") n=(D.threads||[]).reduce(function(s,t){return s+t.messages.length;},0);
+      else if(id==="review") n=(D.review&&D.review.text)?1:0;
       return n?" · "+n:"";
     }
     document.getElementById("pdPills").innerHTML=SECS.map(function(s){
@@ -1683,6 +1705,14 @@ window.__portalDesk=function(host){
       ],function(){return {id:nid(),date:Date.now()+14*86400000,title:"New milestone",kind:"phase",status:"planned"};},
       function(v,it){ it.date=i2d(v[0]); it.title=v[1]; it.kind=v[2]; it.status=v[3]; });
       saveBtn("schedule",function(){ return D.schedule; });
+    }
+    else if(cur.sec==="review"){
+      var rv=D.review||{};
+      ed.appendChild(el('<div class="grp"><div class="gh"><span>Client review</span></div>'+
+        (rv.text?('<p class="mini">Posted '+new Date(rv.t||Date.now()).toLocaleString()+'</p>'+
+        '<p style="font-family:&quot;Playfair Display&quot;,serif;font-size:1.35rem;line-height:1.5;margin:.5rem 0">'+esc(rv.text)+'</p>'+
+        '<p class="hint">'+esc(rv.name||"Client")+(rv.role?(" - "+esc(rv.role)):"")+' - '+esc(rv.rating||5)+'/5</p>'):'<p class="hint">This client has not posted a public review yet.</p>')+
+      '</div>'));
     }
     else if(cur.sec==="activity"){
       var acts=(D.activity||[]);

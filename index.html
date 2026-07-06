@@ -175,7 +175,7 @@
   .grid3{display:grid;gap:1.1rem;grid-template-columns:1fr}
   @media(min-width:640px){.grid3{grid-template-columns:1fr 1fr}}
   @media(min-width:1024px){.grid3{grid-template-columns:1fr 1fr 1fr}}
-  .proj{position:relative;aspect-ratio:4/5;border-radius:1.5rem;overflow:hidden}
+  .proj{position:relative;display:block;aspect-ratio:4/5;border-radius:1.5rem;overflow:hidden;text-decoration:none;color:inherit}
   .proj .img{position:absolute;inset:0;transition:transform .9s cubic-bezier(.22,1,.36,1),filter .9s}
   .proj:hover .img{transform:scale(1.06)}
   .proj .shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(23,24,27,.52),rgba(23,24,27,.04) 55%,transparent)}
@@ -522,21 +522,17 @@
     <div class="grid3" id="projGrid"></div>
   </section>
 
-  <!-- founder -->
-  <section id="featured" class="container" style="padding:5rem 1.5rem">
-    <div class="reveal" style="display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1.6rem">
-      <div><div class="e-eyebrow" style="margin-bottom:.9rem">Featured project <span class="e-no">/ 03</span></div><h2 class="title" style="font-size:clamp(1.8rem,4vw,2.6rem)" id="featTitle">—</h2></div>
-      <a href="gallery.html" class="viewall">View all →</a>
+  <!-- metrics -->
+  <section id="metrics" class="container" style="padding:4rem 1.5rem 5rem">
+    <div class="reveal" style="max-width:40rem">
+      <div class="e-eyebrow" style="margin-bottom:.9rem">Studio numbers <span class="e-no">/ 03</span></div>
+      <h2 class="title" style="font-size:clamp(1.8rem,4vw,2.6rem)">Measured by <span class="gtext">trust</span></h2>
     </div>
-    <a href="gallery.html" class="feat-card glass reveal e-ticks" id="featCard">
-      <div class="feat-img" id="featImg"></div>
-      <div class="feat-body"><p class="feat-loc" id="featLoc"></p><p class="feat-desc" id="featDesc"></p></div>
-    </a>
     <div class="statrow reveal" id="stats">
-      <div class="stat"><span class="num" data-count="120">0</span><span class="lbl">Projects delivered</span></div>
-      <div class="stat"><span class="num" data-count="14">0</span><span class="lbl">Cities</span></div>
-      <div class="stat"><span class="num" data-count="18">0</span><span class="lbl">Years</span></div>
-      <div class="stat"><span class="num" data-count="96" data-suffix="%">0</span><span class="lbl">Client satisfaction</span></div>
+      <div class="stat"><span class="num" data-stat-count="0" data-count="120">0</span><span class="lbl" data-stat-label="0">Projects delivered</span></div>
+      <div class="stat"><span class="num" data-stat-count="1" data-count="14">0</span><span class="lbl" data-stat-label="1">Cities</span></div>
+      <div class="stat"><span class="num" data-stat-count="2" data-count="18">0</span><span class="lbl" data-stat-label="2">Years</span></div>
+      <div class="stat"><span class="num" data-stat-count="3" data-count="96" data-suffix="%">0</span><span class="lbl" data-stat-label="3">Client satisfaction</span></div>
     </div>
   </section>
   <section id="founder" class="container" style="padding:7rem 1.5rem">
@@ -674,26 +670,47 @@
 
   document.getElementById("yr").textContent = new Date().getFullYear();
 
-  var projects = [
-    {name:"Aurora Penthouse", tag:"Interior", g:"linear-gradient(135deg,#dcdfe4,#bfc4cb)"},
-    {name:"Meridian Facade", tag:"Exterior", g:"linear-gradient(160deg,#cdd1d7,#e4e6ea)"},
-    {name:"Lumen Retail", tag:"Interior", g:"linear-gradient(120deg,#b7bcc4,#d9dce1)"},
-    {name:"Skyline Terrace", tag:"Exterior", g:"linear-gradient(150deg,#e1e3e7,#c3c8cf)"},
-    {name:"Atelier Office", tag:"Interior", g:"linear-gradient(135deg,#c9cdd4,#e7e9ec)"},
-    {name:"Verde Courtyard", tag:"Exterior", g:"linear-gradient(145deg,#d4d7dc,#b2b7bf)"}
+  function safeHomeImageUrl(u){
+    u=String(u||"").trim();
+    if(!u || /[\r\n"'()\\]/.test(u)) return "";
+    if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u)) return u;
+    if(/^blob:https?:\/\//i.test(u) || /^https?:\/\/[^\s]+$/i.test(u)) return u;
+    if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(u)) return u;
+    return "";
+  }
+  function homeEsc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  var fallbackProjects = [
+    {title:"Residences", sub:"Homes shaped around light, quiet and daily ritual.", cover:""},
+    {title:"Commercial", sub:"Retail, workplace and civic fronts with a quiet presence.", cover:""},
+    {title:"Details", sub:"Joinery, thresholds and the close-up moments in between.", cover:""}
   ];
+  var projects = (window.__CMS&&window.__CMS.galleryBooks&&window.__CMS.galleryBooks.length?window.__CMS.galleryBooks:fallbackProjects).map(function(b,i){
+    return {name:String((b&&b.title)||"Untitled book"), tag:"Gallery book", desc:String((b&&b.sub)||"Open the gallery book to see the full cover, pages, images and project story."), img:String((b&&b.cover)||""), i:i,
+      g:["linear-gradient(135deg,#dcdfe4,#bfc4cb)","linear-gradient(160deg,#cdd1d7,#e4e6ea)","linear-gradient(120deg,#b7bcc4,#d9dce1)","linear-gradient(145deg,#d4d7dc,#b2b7bf)"][i%4] };
+  });
   var grid = document.getElementById("projGrid");
   projects.forEach(function(p,pi){
-    var d = document.createElement("div");
+    var d = document.createElement("a");
     d.className = "proj glass reveal";
+    d.href = "gallery.html?book="+encodeURIComponent(p.i);
+    var img=safeHomeImageUrl(p.img);
     d.innerHTML =
-      '<div class="img" style="background:'+p.g+'"></div>'+
+      '<div class="img" style="'+(img?"background-image:url('"+img+"');background-size:cover;background-position:center":"background:"+p.g)+'"></div>'+
       '<div class="shade"></div>'+
       '<span class="p-idx">0'+(pi+1)+' / 0'+projects.length+'</span>'+
-      '<div class="base"><span class="badge">'+p.tag+'</span><h3>'+p.name+'</h3></div>'+
-      '<div class="over"><h3>'+p.name.replace(/ (\S+)$/,' <em>$1</em>')+'</h3><p>A study in light, material and proportion — crafted end to end by the Elevé studio.</p><span class="cs">View case study →</span></div>';
+      '<div class="base"><span class="badge">'+homeEsc(p.tag)+'</span><h3>'+homeEsc(p.name)+'</h3></div>'+
+      '<div class="over"><h3>'+homeEsc(p.name).replace(/ (\S+)$/,' <em>$1</em>')+'</h3><p>'+homeEsc(p.desc)+'</p><span class="cs">Open book cover -></span></div>';
     grid.appendChild(d);
   });
+  (function(){
+    var stats=(window.__CMS&&window.__CMS.stats)||[];
+    stats.forEach(function(s,i){
+      var n=document.querySelector('[data-stat-count="'+i+'"]'), l=document.querySelector('[data-stat-label="'+i+'"]');
+      if(n&&s&&s.count!==undefined&&String(s.count).trim()!=="") n.setAttribute("data-count",parseFloat(s.count)||0);
+      if(n&&s&&s.suffix!==undefined) n.setAttribute("data-suffix",String(s.suffix||""));
+      if(l&&s&&s.label) l.textContent=s.label;
+    });
+  })();
 
   var quotes = [
     {t:"Elevé didn't decorate our home — they understood how we wanted to feel in it. Every room breathes.", n:"Anais R.", r:"Penthouse owner, Lisbon"},
@@ -732,6 +749,20 @@
     qbox.addEventListener("mouseenter",function(){clearInterval(qtimer); if(qprog){qprog.style.transition="none";qprog.style.width="0";}});
     qbox.addEventListener("mouseleave",function(){qtimer=setInterval(qnext,5000); qprogress();});
   }
+  (function(){
+    var apibase=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
+    fetch(apibase+"/api/reviews").then(function(r){ return r.ok?r.json():null; }).then(function(j){
+      if(!j||!j.reviews||!j.reviews.length) return;
+      quotes=j.reviews.map(function(r){ return {t:r.text,n:r.name||"Client",r:r.role||"Eleve client"}; });
+      dots.innerHTML="";
+      qi=0;
+      quotes.forEach(function(_,i){
+        var b=document.createElement("button"); b.className="dot"; b.setAttribute("aria-label","Show testimonial "+(i+1));
+        b.addEventListener("click",function(){qi=i;qrender(qi);qrestart();}); dots.appendChild(b);
+      });
+      qrender(0,true); qrestart();
+    }).catch(function(){});
+  })();
 
   document.getElementById("contactForm").addEventListener("submit",function(e){
     e.preventDefault(); document.getElementById("submitBtn").textContent="Thank you — we'll be in touch";
@@ -1223,7 +1254,7 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
 <script src="chrome.js?v=20260704m4"></script>
 <script>
 (function(){
-  var ids=["hero","services","portfolio","featured","founder","testimonials","contact"];
+  var ids=["hero","services","portfolio","metrics","founder","testimonials","contact"];
   var prog=document.getElementById("prog");
   function onScroll(){ var h=(document.body.scrollHeight-innerHeight)||1, p=Math.min(1,Math.max(0,(scrollY||0)/h)); if(prog)prog.style.width=(p*100)+"%";
   }
@@ -1233,14 +1264,6 @@ document.addEventListener("click",function(e){var a=e.target.closest?e.target.cl
     st.querySelectorAll(".num").forEach(function(el){ var to=+el.getAttribute("data-count")||0, suf=el.getAttribute("data-suffix")||"", t0=performance.now(), dur=1400;
       (function step(now){ var k=Math.min(1,(now-t0)/dur), v=Math.round(to*(1-Math.pow(1-k,3))); el.textContent=v+suf; if(k<1)requestAnimationFrame(step); })(performance.now()); }); }
   addEventListener("scroll",counters,{passive:true}); setTimeout(counters,300);
-  // featured project (from CMS gallery data)
-  try{ var C=window.__CMS||{}, base=[["Aurora Penthouse","Residential · Lisbon"],["Meridian Facade","Commercial · Rotterdam"],["Lumen Retail","Flagship · Singapore"],["Skyline Terrace","Rooftop · Barcelona"],["Atelier Office","Workplace · Berlin"]], del=C.galleryDel||[], feat;
-    function safeFeatureImg(u){ u=String(u||"").trim(); if(!u || /[\r\n"'()\\]/.test(u)) return ""; if(/^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u)) return u; if(/^blob:https?:\/\//i.test(u) || /^https?:\/\/[^\s]+$/i.test(u)) return u; if(/^\/?[A-Za-z0-9._~/%-]+\.(?:png|jpe?g|webp|gif|svg)$/i.test(u)) return u; return ""; }
-    if(C.galleryAdd&&C.galleryAdd.length){ var a=C.galleryAdd[C.galleryAdd.length-1]; feat={name:a.name||"New project",loc:a.loc||"",desc:a.desc||"",img:(a.imgs&&a.imgs[0])||a.img||""}; }
-    else { var bi=-1; for(var _i=0;_i<base.length;_i++){ if(del.indexOf(_i)===-1){ bi=_i; break; } } if(bi>=0){ var o=(C.gallery&&C.gallery[bi])||{}; feat={name:o.name||base[bi][0],loc:o.loc||base[bi][1],desc:o.desc||"A recent Elevé project — pale materials, considered light, and just enough emptiness to let the space breathe.",img:(o.imgs&&o.imgs[0])||o.img||""}; } else { feat={name:"",loc:"",desc:"",img:""}; } }
-    var t=document.getElementById("featTitle"),l=document.getElementById("featLoc"),d=document.getElementById("featDesc"),im=document.getElementById("featImg");
-    if(t)t.textContent=feat.name; if(l)l.textContent=feat.loc; if(d)d.textContent=feat.desc; if(im){ var safe=safeFeatureImg(feat.img); if(safe) im.style.backgroundImage='url("'+safe+'")'; im.style.backgroundSize="cover"; im.style.backgroundPosition="center"; }
-  }catch(e){}
   // contact form -> backend
   var apibase=(location.protocol==="http:"||location.protocol==="https:")?"":"http://localhost:4000";
   var form=document.getElementById("contactForm");

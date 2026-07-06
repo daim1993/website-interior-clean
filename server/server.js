@@ -261,10 +261,27 @@ app.use((err,req,res,next)=>{
 });
 function validStr(v,max){ return typeof v==="string" && v.length<=max; }
 function cleanEmail(v){ const s=String(v||"").trim().toLowerCase(); return (s.length<=200 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) ? s : ""; }
+function publicReview(p,u){
+  const r=p&&p.review;
+  if(!r || !validStr(r.text,1200) || !r.text.trim()) return null;
+  return {
+    id:u.id,
+    name:validStr(r.name,80)&&r.name.trim()?r.name.trim():String(u.email||"Client").split("@")[0],
+    role:validStr(r.role,120)&&r.role.trim()?r.role.trim():"Eleve client",
+    rating:Math.max(1,Math.min(5,parseInt(r.rating,10)||5)),
+    text:r.text.trim().slice(0,1200),
+    t:r.t||0
+  };
+}
 
 /* ---------- content (marketing / CMS) ---------- */
 app.get("/healthz",(req,res)=> res.json({ ok:true, up:Math.round(process.uptime()), users:(db.users||[]).length, projects:(db.projects||[]).length }));
 app.get("/api/content", (req,res)=> res.json({ content: db.content||{} }));
+app.get("/api/reviews",(req,res)=>{
+  const reviews=db.users.filter(u=>u.role==="user").map(u=>publicReview(loadPortal(u.id),u)).filter(Boolean)
+    .sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,24);
+  res.json({ reviews });
+});
 app.post("/api/login", (req,res)=>{ // studio master password (used by the CMS)
   const locked=bruteLocked(bruteKey(req,"admin"));
   if(locked) return res.status(429).json({ error:"Too many attempts — locked for "+locked+"s." });
@@ -468,7 +485,7 @@ function loadPortal(uidStr){
   pCache.set(id,doc||null); return doc||null;
 }
 function pact(doc,by,text,who){ doc.activity=doc.activity||[]; doc.activity.unshift({t:Date.now(),by:String(by).slice(0,80),text:String(text).slice(0,300),who:who?String(who).slice(0,120):undefined}); if(doc.activity.length>300) doc.activity.pop(); }
-function emptyPortal(){ return { project:null, actions:[], moodboards:{rooms:[]}, reactions:{}, comments:{},
+function emptyPortal(){ return { project:null, actions:[], moodboards:{rooms:[]}, reactions:{}, comments:{}, review:null,
   renders:{rooms:[]}, approvals:[], materials:[], budget:{currency:"€",categories:[],milestones:[]},
   threads:[{id:uid(),title:"General",messages:[]}], schedule:[], activity:[], updatedAt:Date.now() }; }
 function portalOf(u){ let d=loadPortal(u.id); if(!d){ d=emptyPortal(); pact(d,"system","Workspace created for "+(u.email||u.id)); savePortal(u.id,d,true); } return d; }
@@ -592,6 +609,20 @@ app.post("/api/portal/comment",(req,res)=>{ const u=authUser(req); if(!u) return
   const c={ id:uid(), by:"client", text:text.trim().slice(0,2000), t:Date.now() };
   p.comments[refId].push(c); pact(p,"client","Commented on "+refId, u.email);
   savePortal(u.id,p); res.json({ ok:true, comment:c }); });
+app.post("/api/portal/review",(req,res)=>{ const u=authUser(req); if(!u) return res.status(401).json({error:"Unauthorized"});
+  const p=portalOf(u), b=req.body||{};
+  const text=validStr(b.text,1200)?b.text.trim():"";
+  if(!text) return res.status(400).json({error:"A review is required"});
+  p.review={
+    id:u.id,
+    name:validStr(b.name,80)&&b.name.trim()?b.name.trim().slice(0,80):String(u.email||"Client").split("@")[0],
+    role:validStr(b.role,120)&&b.role.trim()?b.role.trim().slice(0,120):"",
+    rating:Math.max(1,Math.min(5,parseInt(b.rating,10)||5)),
+    text:text.slice(0,1200),
+    t:Date.now()
+  };
+  pact(p,"client","Posted a public review",u.email);
+  savePortal(u.id,p); res.json({ ok:true, review:p.review }); });
 app.post("/api/portal/approve",(req,res)=>{ const u=authUser(req); if(!u) return res.status(401).json({error:"Unauthorized"});
   const p=portalOf(u), { id, action, note }=req.body||{};
   const a=p.approvals.find(x=>x.id===id); if(!a) return res.status(404).json({error:"Not found"});
